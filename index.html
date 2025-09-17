@@ -71,6 +71,13 @@
       color: #0d6efd;
       text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
     }
+    #contador {
+      margin-top: 15px;
+      font-size: 18px;
+      font-weight: bold;
+      text-align: center;
+      color: #0d6efd;
+    }
   </style>
 </head>
 <body>
@@ -91,6 +98,7 @@
       <div>Dom</div>
     </div>
     <div class="calendar-grid" id="diasContainer"></div>
+    <div id="contador"></div>
   </div>
 </div>
 
@@ -104,6 +112,18 @@
 
   function actualizarTitulo() {
     document.getElementById("tituloMes").innerText = `${nombreMeses[mes]} ${anio}`;
+  }
+
+  function actualizarContador() {
+    let count = 0;
+    const diasEnMes = new Date(anio, mes + 1, 0).getDate();
+    for (let dia = 1; dia <= diasEnMes; dia++) {
+      const clave = `${anio}-${String(mes+1).padStart(2,"0")}-${String(dia).padStart(2,"0")}`;
+      if (localStorage.getItem(clave) === "tomada") {
+        count++;
+      }
+    }
+    document.getElementById("contador").innerText = `💊 Pastillas tomadas este mes: ${count}`;
   }
 
   function generarCalendario() {
@@ -145,10 +165,13 @@
           localStorage.setItem(clave, "tomada");
           div.classList.add("tomada");
         }
+        actualizarContador();
       };
 
       container.appendChild(div);
     }
+
+    actualizarContador();
   }
 
   function cambiarMes(delta) {
@@ -169,3 +192,4 @@
 </script>
 </body>
 </html>
+
