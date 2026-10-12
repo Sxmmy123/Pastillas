@@ -1,6 +1,7 @@
 export const OWNER = "pastillas:owner";
 const RECORDS = "pastillas:records:v1";
 const DELETED = "pastillas:deleted:v1";
+const LEGACY_DELETED = "pastillas:legacy-deleted:v1";
 const LEGACY_NAMES = "pastillas:legacy-names:v1";
 export const recordsKey = (uid) => RECORDS + ":" + uid;
 export const plansKey = (uid) => "pastillas:plans:v1:" + uid;
@@ -19,12 +20,17 @@ export function writeJson(key, value) {
 export function readPlans(uid) { const items = readJson(plansKey(uid), []); return Array.isArray(items) ? items : []; }
 export function readReminders(uid) { const prefs = readJson(prefsKey(uid), {}); return prefs?.remindersEnabled !== false; }
 export function readDeleted(uid, previous = uid) {
-  const keys = [DELETED + ":" + uid];
+  const keys = [DELETED + ":" + uid, LEGACY_DELETED];
   if (previous?.startsWith("local-") && previous !== uid) keys.push(DELETED + ":" + previous);
   if (!previous) keys.push(DELETED);
   return new Set(keys.flatMap((key) => { const value = readJson(key, []); return Array.isArray(value) ? value : []; }));
 }
-export function writeDeleted(ids, uid) { return writeJson(DELETED + ":" + uid, [...ids]); }
+export function writeDeleted(ids, uid) {
+  if (!writeJson(DELETED + ":" + uid, [...ids])) return false;
+  const stored = readJson(LEGACY_DELETED, []), legacy = new Set(Array.isArray(stored) ? stored : []);
+  for (const id of ids) if (typeof id === "string" && id.startsWith("legacy-")) legacy.add(id);
+  return !legacy.size || writeJson(LEGACY_DELETED, [...legacy]);
+}
 
 // The original Bootstrap page used one YYYY-MM-DD = "tomada" key per day.
 // These keys belong to this browser's old calendar and must survive UID changes.

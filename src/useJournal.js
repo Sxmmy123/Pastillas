@@ -105,9 +105,14 @@ export default function useJournal() {
     setDirty((old) => new Set(old).add(item.id)); return item;
   }
   function removeRecord(record) {
-    if (record.legacy) return;
-    store(state.current.records.filter((item) => item.id !== record.id));
-    setDeleted((old) => { const next = new Set(old).add(record.id); writeDeleted(next, state.current.uid); state.current.deleted = next; return next; });
+    const current = state.current, nextDeleted = new Set(current.deleted).add(record.id);
+    if (!writeDeleted(nextDeleted, current.uid)) throw new Error("No se pudo guardar la eliminación en este navegador. Inténtalo otra vez.");
+    const nextRecords = current.records.filter((item) => item.id !== record.id);
+    // Tombstones already make deletion durable even if the cache cannot shrink.
+    // Original legacy date keys remain untouched and are filtered on import.
+    persistRecords(nextRecords, current.uid);
+    state.current.records = nextRecords; state.current.deleted = nextDeleted;
+    setRecords(nextRecords); setDeleted(nextDeleted);
     setPendingDeletes((old) => new Set(old).add(record.id)); setDirty((old) => { const next = new Set(old); next.delete(record.id); return next; });
   }
   function renameRecord(recordId, medicine) {

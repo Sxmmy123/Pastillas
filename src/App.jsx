@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Activity, Bell, BellOff, CalendarDays, Check, CheckCircle2, ChevronLeft, ChevronRight, Clock3, FileText, LoaderCircle, Pencil, Plus, Printer, Repeat2, Settings2, ShieldCheck, Trash2, X } from "lucide-react";
 import useJournal from "./useJournal";
 import useCalendarSwipe from "./useCalendarSwipe";
+import usePendingRegistrations from "./usePendingRegistrations";
 import MedicineCatalog from "./MedicineCatalog";
 import { makeId } from "./storage";
 import { addDays, addMonths, atTime, dateLabel, durationLabel, entriesFor, frequentMedicines, isDue, isNamedMedicine, medicineLabel, monthTitle, norm, rangeFor, timeLabel, today } from "./calendar";
@@ -42,7 +43,7 @@ function Modal({ title, sub, onClose, children, wide = false, report = false }) 
     </section>
   </div>;
 }
-function QuickLogModal({ date, frequent, suggestions, initialMedicine = "", onClose, onSave }) {
+function QuickLogModal({ date, frequent, suggestions, initialMedicine = "", delayed = false, onClose, onSave }) {
   const historical = date < today();
   const [medicine, setMedicine] = useState(initialMedicine), [pickedDate, setDate] = useState(date), [custom, setCustom] = useState(historical), [time, setTime] = useState(historical ? "" : timeLabel(Date.now(), true)), [error, setError] = useState("");
   function save(value) {
@@ -64,12 +65,13 @@ function QuickLogModal({ date, frequent, suggestions, initialMedicine = "", onCl
       {pickedDate >= today() && <button type="button" className="text-button time-toggle" onClick={() => setCustom((value) => !value)}>{custom ? "Usar la hora automática" : "Cambiar fecha u hora"}<ChevronRight size={14} /></button>}
       {custom && <div className="form-two-columns"><label className="field-label">Fecha<input type="date" max={today()} value={pickedDate} onChange={(event) => { const value = event.target.value; if (value && value < today() && pickedDate >= today()) setTime(""); setDate(value); }} required /></label><label className="field-label">Hora de la toma<input autoFocus={historical && !!initialMedicine} type="time" step="1" value={time} onChange={(event) => setTime(event.target.value)} required /></label></div>}
       {pickedDate < today() && <p className="hint">Indica la hora real de esa toma para mantener un seguimiento preciso.</p>}
+      {delayed && <p className="hint">Tendrás 4 segundos para anular el registro antes de que se guarde.</p>}
       {error && <p className="form-error" role="alert">{error}</p>}
       <button className="primary-button full-button"><CheckCircle2 size={18} />{medicine.trim() ? "Guardar toma" : "Guardar sin especificar"}</button>
     </form>
   </Modal>;
 }
-function NameMedicineModal({ record, suggestions, onClose, onSave }) {
+function NameMedicineModal({ record, suggestions, onClose, onSave, onDelete }) {
   const [medicine, setMedicine] = useState(isNamedMedicine(record.medicine) ? record.medicine : ""), [error, setError] = useState("");
   return <Modal title={isNamedMedicine(record.medicine) ? "Nombre de la pastilla" : "¿Qué pastilla fue?"} sub="COMPLETAR ESTA TOMA" onClose={onClose}>
     <div className="confirm-med"><Med name={medicine} /><div><b>{dateLabel(record.date, true)}</b><span>{record.takenAt ? "Tomada · " + timeLabel(record.takenAt, true) : "Hora no registrada"}</span></div></div>
@@ -80,6 +82,7 @@ function NameMedicineModal({ record, suggestions, onClose, onSave }) {
       {error && <p className="form-error" role="alert">{error}</p>}
       <button className="primary-button full-button"><Check size={18} />{medicine.trim() ? "Guardar nombre" : "Mantener sin especificar"}</button>
     </form>
+    <button className="text-button delete-record-link" onClick={() => onDelete(record)}><Trash2 size={15} />Eliminar esta toma</button>
   </Modal>;
 }
 function PlanModal({ date, suggestions, onClose, onSave }) {
@@ -154,7 +157,7 @@ function DoseRow({ dose, records, onTake, onDelete, onName }) {
   return <article className="dose-row"><Med name={dose.medicine} /><div className="dose-copy">{!dose.isVirtual && onName ? <button className="dose-name-button" onClick={() => onName(dose)}><span>{medicineLabel(dose.medicine)}</span><Pencil size={13} /></button> : <h3>{medicineLabel(dose.medicine)}</h3>}<span className={"dose-status " + (dose.status === "taken" ? "taken" : "")}>
     {dose.status === "taken" ? <><CheckCircle2 size={13} />Tomada{dose.takenAt ? " · " + timeLabel(dose.takenAt, true) : " · Hora no registrada"}</> : <><Clock3 size={13} />Programada · {dose.plannedTime}</>}
   </span>{dose.legacy && <small>Registro del calendario anterior</small>}{delta !== null && <small>Prevista {dose.plannedTime} · {delta === 0 ? "A tiempo" : durationLabel(delta) + (delta < 0 ? " antes" : " después")}</small>}{previous && <small>{durationLabel(dose.takenAt - previous.takenAt)} desde la toma anterior</small>}</div>
-    {!dose.legacy && <div className="dose-actions">{dose.status !== "taken" ? <button className="take-button" disabled={dose.date > today()} onClick={() => onTake(dose)}><Check size={16} /><span>Tomada</span></button> : <button className="icon-button delete-button" onClick={() => onDelete(dose)} aria-label={"Eliminar registro de " + dose.medicine}><Trash2 size={16} /></button>}</div>}
+    <div className="dose-actions">{dose.status !== "taken" ? <button className="take-button" disabled={dose.date > today()} onClick={() => onTake(dose)}><Check size={16} /><span>Tomada</span></button> : <button className="icon-button delete-button" onClick={() => onDelete(dose)} aria-label={"Eliminar registro de " + medicineLabel(dose.medicine)}><Trash2 size={16} /></button>}</div>
   </article>;
 }
 function ReportModal({ day, view, records, name, onClose }) {
@@ -179,6 +182,8 @@ export default function App() {
   const { records, plans, name, reminders, sync, cloudError } = journal;
   const [section, setSection] = useState("records"), [day, setDay] = useState(today), [view, setView] = useState("month"), [modal, setModal] = useState(""), [selected, setSelected] = useState(null), [returnTo, setReturnTo] = useState(""), [toast, setToast] = useState("");
   const [initialMedicine, setInitialMedicine] = useState(""), [nameReturnTo, setNameReturnTo] = useState(""), [dragDate, setDragDate] = useState(null);
+  const [dropQuick, setDropQuick] = useState(false), [deleteReturnTo, setDeleteReturnTo] = useState("day");
+  const registrations = usePendingRegistrations((data) => { journal.saveRecord(data); setToast(medicineLabel(data.medicine) + " · Toma guardada"); }, (error) => setToast(error.message));
   const startupShown = useRef(false);
   const frequent = useMemo(() => frequentMedicines(records), [records]);
   const suggestions = useMemo(() => {
@@ -199,20 +204,26 @@ export default function App() {
     plans.filter((plan) => isDue(plan, today())).forEach((plan) => {
       const taken = records.some((item) => item.planId === plan.id && item.date === today() && item.status === "taken"), due = atTime(today(), plan.time);
       if (!taken && due > Date.now()) timers.push(setTimeout(async () => {
-        try { const registration = await navigator.serviceWorker?.getRegistration(); if (registration?.showNotification) await registration.showNotification("Hora de tu medicamento", { body: plan.medicine + " · " + plan.time, icon: "./icon.svg", tag: plan.id + "-" + today() }); else new Notification("Hora de tu medicamento", { body: plan.medicine + " · " + plan.time }); } catch {}
+        try { const registration = await navigator.serviceWorker?.getRegistration(); if (registration?.showNotification) await registration.showNotification("Hora de tu medicamento", { body: plan.medicine + " · " + plan.time, icon: "./icon-192.png", tag: plan.id + "-" + today() }); else new Notification("Hora de tu medicamento", { body: plan.medicine + " · " + plan.time, icon: "./icon-192.png" }); } catch {}
       }, due - Date.now()));
     });
     return () => timers.forEach(clearTimeout);
   }, [plans, records, reminders, permission]);
   function openDay(date) { setDay(date); setModal("day"); }
-  function openQuick(from = "", medicine = "", date = day) { setDay(date > today() ? today() : date); setInitialMedicine(medicine); setReturnTo(from); setModal("quick-log"); }
+  function openQuick(from = "", medicine = "", date = day, fromDrop = false) { setDay(date > today() ? today() : date); setInitialMedicine(medicine); setDropQuick(fromDrop); setReturnTo(from); setModal("quick-log"); }
   function openEntry(dose, from = "") { setDay(dose.date); if (dose.isVirtual) { setModal("day"); return; } setSelected(dose); setNameReturnTo(from); setModal("name-medicine"); }
+  function openDelete(record, from = "day") { setSelected(record); setDeleteReturnTo(from); setModal("delete"); }
+  function deleteSelected() {
+    try { journal.removeRecord(selected); setSelected(null); setModal(deleteReturnTo === "name-medicine" ? nameReturnTo : deleteReturnTo); setToast("Toma eliminada"); }
+    catch (error) { setToast(error.message); }
+  }
   function renameMedicine(recordId, medicine) { const updated = journal.renameRecord(recordId, medicine); setSelected(updated); setModal(nameReturnTo); setToast(medicine.trim() ? "Nombre de la pastilla guardado" : "Toma conservada sin especificar"); }
+  function queueDrop(data) { registrations.queue(data); setDay(data.date); setModal(""); }
   function dropMedicine(medicine, date) {
     setDragDate(null);
     if (date > today()) return;
-    if (date < today()) { openQuick("", medicine, date); return; }
-    try { saveLog({ medicine, date, status: "taken", takenAt: Date.now(), plannedTime: null }); } catch (err) { setToast(err.message); }
+    if (date < today()) { openQuick("", medicine, date, true); return; }
+    queueDrop({ medicine, date, status: "taken", takenAt: Date.now(), plannedTime: null });
   }
   function changeSection(next) { setSection(next); setModal(""); }
   function shift(direction) { setDay((current) => view === "year" ? addMonths(current, direction * 12) : view === "week" ? addDays(current, direction * 7) : addMonths(current, direction)); }
@@ -235,14 +246,15 @@ export default function App() {
       </div>
     </main>
     <nav className="mobile-nav" aria-label="Secciones principales"><button className={"mobile-nav-link" + (!isTreatment ? " active" : "")} aria-current={!isTreatment ? "page" : undefined} onClick={() => changeSection("records")}><CalendarDays size={21} /><span>Mis tomas</span></button><button className="mobile-add" onClick={() => isTreatment ? setModal("plan") : openQuick()} aria-label={isTreatment ? "Programar tratamiento" : "Registrar toma"}><Plus size={25} /></button><button className={"mobile-nav-link" + (isTreatment ? " active" : "")} aria-current={isTreatment ? "page" : undefined} onClick={() => changeSection("treatments")}><Repeat2 size={21} /><span>Tratamientos</span></button></nav>
-    {toast && <div className="toast" role="status"><CheckCircle2 size={18} /><span>{toast}</span><button onClick={() => setToast("")} aria-label="Cerrar aviso"><X size={16} /></button></div>}
-    {modal === "day" && <Modal title={dateLabel(day)} sub={isTreatment ? "TRATAMIENTOS DEL DÍA" : "TOMAS DEL DÍA"} onClose={() => setModal("")}><div className="day-modal-list">{doses.length ? doses.map((dose) => <DoseRow key={dose.id} dose={dose} records={records} onTake={takeDose} onName={(dose) => openEntry(dose, "day")} onDelete={(item) => { setSelected(item); setModal("delete"); }} />) : <div className="empty-state"><CalendarDays size={27} /><b>{isTreatment ? "Sin tomas programadas" : "No hay tomas en esta fecha"}</b><p>{isTreatment ? "Los tratamientos aparecerán según su repetición." : day > today() ? "Aquí verás las pastillas que registres ese día." : "Si olvidaste registrar una pastilla, puedes añadirla aquí."}</p></div>}</div><button className="primary-button full-button" disabled={!isTreatment && day > today()} onClick={() => isTreatment ? setModal("plan") : openQuick("day")}><Plus size={18} />{isTreatment ? "Programar tratamiento" : "Registrar una toma en este día"}</button></Modal>}
-    {modal === "quick-log" && <QuickLogModal date={day} frequent={frequent} suggestions={suggestions} initialMedicine={initialMedicine} onClose={() => setModal(returnTo)} onSave={saveLog} />}
-    {modal === "name-medicine" && selected && <NameMedicineModal record={selected} suggestions={suggestions} onClose={() => setModal(nameReturnTo)} onSave={renameMedicine} />}
+    {toast && <div className={"toast" + (registrations.pending.length ? " toast-top" : "")} role="status"><CheckCircle2 size={18} /><span>{toast}</span><button onClick={() => setToast("")} aria-label="Cerrar aviso"><X size={16} /></button></div>}
+    {!!registrations.pending.length && <section className="pending-registrations" aria-label="Registros pendientes">{registrations.pending.map((item) => <div className="pending-registration" key={item.id}><Med name={item.data.medicine} small /><div className="pending-registration-copy" role="status"><b>{medicineLabel(item.data.medicine)}</b><span>{dateLabel(item.data.date, true)} · {timeLabel(item.data.takenAt, true)}</span><small>Registro pendiente</small></div><button onClick={() => { if (registrations.cancel(item.id)) setToast("Registro anulado"); }} aria-label={"Anular registro de " + medicineLabel(item.data.medicine)}><X size={14} />Anular<span className="pending-count" aria-hidden="true">{item.seconds}</span></button></div>)}</section>}
+    {modal === "day" && <Modal title={dateLabel(day)} sub={isTreatment ? "TRATAMIENTOS DEL DÍA" : "TOMAS DEL DÍA"} onClose={() => setModal("")}><div className="day-modal-list">{doses.length ? doses.map((dose) => <DoseRow key={dose.id} dose={dose} records={records} onTake={takeDose} onName={(dose) => openEntry(dose, "day")} onDelete={(item) => openDelete(item)} />) : <div className="empty-state"><CalendarDays size={27} /><b>{isTreatment ? "Sin tomas programadas" : "No hay tomas en esta fecha"}</b><p>{isTreatment ? "Los tratamientos aparecerán según su repetición." : day > today() ? "Aquí verás las pastillas que registres ese día." : "Si olvidaste registrar una pastilla, puedes añadirla aquí."}</p></div>}</div><button className="primary-button full-button" disabled={!isTreatment && day > today()} onClick={() => isTreatment ? setModal("plan") : openQuick("day")}><Plus size={18} />{isTreatment ? "Programar tratamiento" : "Registrar una toma en este día"}</button></Modal>}
+    {modal === "quick-log" && <QuickLogModal date={day} frequent={frequent} suggestions={suggestions} initialMedicine={initialMedicine} delayed={dropQuick} onClose={() => setModal(returnTo)} onSave={dropQuick ? queueDrop : saveLog} />}
+    {modal === "name-medicine" && selected && <NameMedicineModal record={selected} suggestions={suggestions} onClose={() => setModal(nameReturnTo)} onSave={renameMedicine} onDelete={(record) => openDelete(record, "name-medicine")} />}
     {modal === "plan" && <PlanModal date={day} suggestions={suggestions} onClose={() => setModal("")} onSave={savePlan} />}
     {modal === "plans" && <Modal title="Tus tratamientos" sub="ADMINISTRAR MEDICACIÓN" onClose={() => setModal("")}><div className="plan-list">{plans.length ? plans.map((plan) => <article className={"treatment-card" + (!plan.active ? " treatment-paused" : "")} key={plan.id}><Med name={plan.medicine} /><div className="treatment-copy"><b>{plan.medicine}</b><span>Cada {plan.interval} {plan.intervalUnit === "weeks" ? "semana(s)" : "día(s)"} · {plan.time}</span><small>{plan.active ? "Activo desde " + dateLabel(plan.startDate, true) : "Pausado"}</small></div><button className={"switch-button" + (plan.active ? " is-on" : "")} role="switch" aria-checked={plan.active} aria-label={(plan.active ? "Pausar " : "Activar ") + plan.medicine} onClick={() => journal.togglePlan(plan)}><span /></button></article>) : <div className="empty-state"><Repeat2 size={25} /><b>Aún no tienes tratamientos</b><p>Programa la medicación de tu receta para verla en su calendario.</p></div>}</div><button className="primary-button full-button" onClick={() => setModal("plan")}><Plus size={18} />Nuevo tratamiento</button></Modal>}
     {modal === "report" && <ReportModal day={day} view={view} records={records} name={name} onClose={() => setModal("")} />}
-    {modal === "delete" && selected && <Modal title="¿Eliminar esta toma?" sub="CONFIRMAR CAMBIO" onClose={() => setModal("day")}><div className="confirm-med"><Med name={selected.medicine} /><div><b>{medicineLabel(selected.medicine)}</b><span>{dateLabel(selected.date, true)} · {timeLabel(selected.takenAt)}</span></div></div><p className="modal-copy">Se quitará de tu historial.</p><div className="modal-actions"><button className="secondary-button" onClick={() => setModal("day")}>Conservar</button><button className="danger-button" onClick={() => { try { journal.removeRecord(selected); setSelected(null); setModal("day"); } catch (err) { setToast(err.message); } }}><Trash2 size={16} />Eliminar</button></div></Modal>}
+    {modal === "delete" && selected && <Modal title="¿Eliminar esta toma?" sub="CONFIRMAR CAMBIO" onClose={() => setModal(deleteReturnTo)}><div className="confirm-med"><Med name={selected.medicine} /><div><b>{medicineLabel(selected.medicine)}</b><span>{dateLabel(selected.date, true)} · {selected.takenAt ? timeLabel(selected.takenAt, true) : "Hora no registrada"}</span></div></div><p className="modal-copy">Se quitará esta toma de tu historial.</p><div className="modal-actions"><button className="secondary-button" onClick={() => setModal(deleteReturnTo)}>Conservar</button><button className="danger-button" onClick={deleteSelected}><Trash2 size={16} />Eliminar</button></div></Modal>}
     {modal === "profile" && <Modal title="Perfil y recordatorios" sub="ESPACIO PERSONAL" onClose={() => setModal("")}><div className="profile-identity"><span className="avatar avatar-large">{initials}</span><div><b>{name || "Tu perfil"}</b><span>Identificador · {journal.uid.slice(0, 8)}</span></div></div><form className="form-stack" onSubmit={(event) => { event.preventDefault(); const value = new FormData(event.currentTarget).get("displayName")?.toString().trim(); if (value) { journal.saveName(value); setModal(""); setToast("Nombre guardado"); } }}><label className="field-label">Tu nombre<input name="displayName" defaultValue={name} placeholder="¿Cómo te llamamos?" maxLength={40} required /></label><button className="primary-button full-button">Guardar nombre</button></form><div className="settings-divider" /><div className="settings-line"><div><b>Recordatorio al abrir</b><span>Ver las tomas de tratamiento pendientes de hoy.</span></div><button className={"switch-button" + (reminders ? " is-on" : "")} role="switch" aria-checked={reminders} aria-label="Recordatorio al abrir" onClick={() => journal.changeReminders(!reminders)}><span /></button></div><div className="settings-line"><span className="settings-icon">{permission === "granted" ? <Bell size={19} /> : <BellOff size={19} />}</span><div><b>Avisos del navegador</b><span>{permission === "denied" ? "Bloqueados en este navegador." : permission === "unsupported" ? "No disponibles en este navegador." : "Mientras la app esté abierta."}</span></div>{permission === "default" && <button className="text-button" onClick={async () => { if (await Notification.requestPermission() === "granted") { setModal(""); setToast("Avisos activados"); } }}>Activar</button>}{permission === "granted" && <CheckCircle2 size={19} className="permission-ok" />}</div><p className="privacy-note"><ShieldCheck size={15} />Tu nombre identifica el perfil. Los datos pertenecen a la identidad anónima de este navegador.</p>{cloudError && <div className="cloud-detail"><b>Guardado local activo</b><p>No se pudo sincronizar con Firebase. Tus registros siguen disponibles en este navegador.</p><code>{cloudError}</code></div>}<p className="hint">Para ver tus registros antiguos, usa el mismo navegador y la misma dirección donde los guardaste.</p></Modal>}
     {modal === "reminder" && <Modal title="Tus tomas de hoy" sub="RECORDATORIO PERSONAL" onClose={() => setModal("")}><div className="reminder-intro"><Bell size={21} /><p>{remainingToday.length} {remainingToday.length === 1 ? "toma programada pendiente" : "tomas programadas pendientes"} para hoy.</p></div><div className="day-modal-list">{remainingToday.map((dose) => <DoseRow key={dose.id} dose={dose} records={records} onTake={takeDose} onDelete={() => {}} />)}</div><div className="modal-actions"><button className="text-button" onClick={() => { journal.changeReminders(false); setModal(""); }}>Desactivar avisos</button><button className="primary-button" onClick={() => { setSection("treatments"); setDay(today()); setModal(""); }}>Ver tratamientos</button></div></Modal>}
   </div>;

@@ -1,1 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><rect width="128" height="128" rx="34" fill="#155c4c"/><g transform="rotate(-38 64 64)"><rect x="32" y="45" width="64" height="38" rx="19" fill="#e7f6ef"/><path d="M64 45v38" stroke="#7cc7a5" stroke-width="4"/><path d="M64 47h13a17 17 0 0 1 0 34H64z" fill="#98dcb8"/></g><circle cx="92" cy="34" r="7" fill="#f6c873"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <title>Pastillas</title>
+  <rect width="512" height="512" rx="112" fill="#246c55"/>
+  <g transform="rotate(-40 256 256)">
+    <rect x="116" y="196" width="280" height="120" rx="60" fill="#f7fff9"/>
+    <path d="M256 196h80a60 60 0 0 1 0 120h-80Z" fill="#b7e4cc"/>
+    <path d="M256 196v120" stroke="#246c55" stroke-width="8"/>
+  </g>
+</svg>

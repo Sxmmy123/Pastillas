@@ -12,8 +12,11 @@ if (!existsSync(resolve(buildRoot, "index.html"))) {
 // Cache this release's compiled files on installation, including the first visit.
 // A release-specific cache updates the app shell without touching LocalStorage.
 const assets = readdirSync(resolve(buildRoot, "assets")).sort();
-const release = createHash("sha256").update(assets.join("\n")).digest("hex").slice(0, 12);
-const shell = ["./", "./manifest.webmanifest", "./icon.svg", ...assets.map((name) => "./assets/" + name)];
+const staticFiles = readdirSync(buildRoot, { withFileTypes: true }).filter((entry) => entry.isFile() && entry.name !== "sw.js").map((entry) => entry.name).sort();
+const releaseHash = createHash("sha256").update(assets.join("\n"));
+staticFiles.forEach((name) => releaseHash.update(name).update(readFileSync(resolve(buildRoot, name))));
+const release = releaseHash.digest("hex").slice(0, 12);
+const shell = ["./", ...staticFiles.filter((name) => name !== "index.html").map((name) => "./" + name), ...assets.map((name) => "./assets/" + name)];
 const workerPath = resolve(buildRoot, "sw.js");
 const worker = readFileSync(workerPath, "utf8")
   .replace(/const CACHE = .*?;/, "const CACHE = " + JSON.stringify("pastillas-shell-" + release) + ";")
