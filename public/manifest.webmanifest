@@ -1,0 +1,20 @@
+{
+  "name": "Pastillas — Mi registro",
+  "short_name": "Pastillas",
+  "description": "Registro personal de medicamentos y horarios.",
+  "lang": "es",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f4f8f5",
+  "theme_color": "#155c4c",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
