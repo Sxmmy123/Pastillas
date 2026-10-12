@@ -2416,3 +2416,65 @@ input:focus-visible {
     break-inside: avoid;
   }
 }
+
+.profile-reminder,
+.sync-alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 11px 14px;
+  border: 1px solid #e5eee8;
+  border-radius: 13px;
+  background: #fff;
+}
+.profile-reminder > div,
+.sync-alert > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.profile-reminder b,
+.sync-alert b {
+  color: #426151;
+  font-size: 10px;
+}
+.profile-reminder span,
+.sync-alert span {
+  color: #84948c;
+  font-size: 9px;
+  line-height: 1.45;
+}
+.profile-reminder .text-button,
+.sync-alert .text-button {
+  flex: 0 0 auto;
+}
+.sync-alert {
+  border-color: #f0e4c8;
+  background: #fffaf0;
+}
+.sync-alert b {
+  color: #806334;
+}
+.sync-alert span {
+  color: #8d7a56;
+}
+@media print {
+  .profile-reminder,
+  .sync-alert {
+    display: none !important;
+  }
+}
+@media (max-width: 760px) {
+  .profile-reminder,
+  .sync-alert {
+    gap: 7px;
+    padding: 9px 10px;
+  }
+  .profile-reminder span,
+  .sync-alert span {
+    max-width: 240px;
+    font-size: 8px;
+  }
+}
