@@ -1,6 +1,6 @@
 # Pastillas
 
-Registro personal de medicamentos hecho con React, Vite, Firebase y modo PWA. La vista diaria está pensada primero para móvil: muestra la hora programada y la hora real, y permite comparar la diferencia.
+Registro personal de medicamentos hecho con React, Vite, Firebase y modo PWA. El calendario es la pantalla principal y ofrece vistas de mes, semana y año. Desde una fecha puedes registrar una toma con la hora actual, programar tratamientos recurrentes y revisar o imprimir el consumo del periodo para compartirlo con tu médico.
 
 ## Desarrollo
 
@@ -26,6 +26,12 @@ El nombre es una etiqueta visible, no una credencial. La identidad anónima se c
 ## Registros anteriores
 
 Las claves antiguas YYYY-MM-DD con valor tomada se conservan intactas. La app las presenta como “Pastilla sin especificar · hora no registrada” y las sincroniza asociadas al usuario anónimo. Los registros nuevos se guardan en una clave independiente de LocalStorage y en Firestore.
+
+## Tratamientos y avisos
+
+Cada tratamiento permite elegir fecha inicial, hora, repetición en días o semanas y duración en días, semanas, meses o sin fecha final. Los tratamientos pausados dejan de crear tomas futuras en el calendario. El aviso al abrir la app se puede desactivar desde el perfil. Los avisos del navegador requieren permiso y se programan mientras la app permanece abierta; el aviso al abrir sirve como recordatorio adicional.
+
+La sección “Consumo del periodo” permite imprimir el calendario y las tomas del mes, semana o año seleccionados, o guardarlos como PDF desde el diálogo de impresión del dispositivo.
 
 ## GitHub Pages
 
