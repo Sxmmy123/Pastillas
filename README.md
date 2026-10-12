@@ -1,6 +1,6 @@
 # Pastillas
 
-Registro personal de medicamentos hecho con React, Vite, Firebase y modo PWA. El calendario es la pantalla principal y ofrece vistas de mes, semana y año. Desde una fecha puedes registrar una toma con la hora actual, programar tratamientos recurrentes y revisar o imprimir el consumo del periodo para compartirlo con tu médico.
+Registro personal de medicamentos hecho con React, Vite, Firebase y modo PWA. Tiene dos calendarios con vistas de mes, semana y año: **Mis tomas** para uso ocasional y registros históricos, y **Tratamientos** para medicación programada. Pulsa una fecha para abrir sus detalles; las tomas aparecen como etiquetas bajo el número del día. La semana muestra el medicamento, su icono, hora y estado.
 
 ## Desarrollo
 
@@ -9,6 +9,8 @@ Requiere Node.js 24.12 o posterior.
 1. Ejecuta npm install.
 2. Ejecuta npm run dev.
 3. Ejecuta npm run build para generar dist.
+
+La entrada de desarrollo es `app/index.html`. La raíz `index.html` contiene el build publicado, por lo que Vite usa la carpeta `app` para compilar siempre el código fuente actualizado.
 
 ## Firebase
 
@@ -25,13 +27,19 @@ El nombre es una etiqueta visible, no una credencial. La identidad anónima se c
 
 ## Registros anteriores
 
-Las claves antiguas YYYY-MM-DD con valor tomada se conservan intactas. La app las presenta como “Pastilla sin especificar · hora no registrada” y las sincroniza asociadas al usuario anónimo. Los registros nuevos se guardan en una clave independiente de LocalStorage y en Firestore.
+Las claves antiguas YYYY-MM-DD con valor tomada se conservan intactas. La app las lee al iniciar, sin esperar a Firebase y aunque cambie la identidad anónima, y las presenta como “Pastilla sin especificar · hora no registrada”. También guarda una copia duradera en el historial actual y las sincroniza asociadas al usuario anónimo cuando Firebase está disponible. El enlace bajo el calendario lleva al mes del último registro histórico.
+
+LocalStorage pertenece a un navegador y un origen concretos. Para recuperar las fechas anteriores debes abrir el mismo navegador y la dirección donde las guardaste. Un navegador integrado, otro perfil, otro dispositivo o una página local no pueden acceder a ese almacenamiento. La aplicación nunca borra las claves originales ni inventa un medicamento u hora para esas fechas.
+
+## Registro rápido
+
+El botón + en móvil y Registrar toma en escritorio abren el modal de registro. Las seis pastillas más registradas se ordenan por frecuencia, agrupando nombres con diferencias de mayúsculas, acentos y espacios, y se guardan con un toque. Estos botones representan frecuencia de uso registrada; no son recomendaciones de consumo. También puedes escribir otra pastilla y ajustar fecha u hora para recuperar una toma olvidada. Las tomas nuevas conservan los segundos; en el detalle se muestra el tiempo desde la toma anterior del mismo medicamento y, para tratamientos, la diferencia con la hora prevista.
 
 ## Tratamientos y avisos
 
 Cada tratamiento permite elegir fecha inicial, hora, repetición en días o semanas y duración en días, semanas, meses o sin fecha final. Los tratamientos pausados dejan de crear tomas futuras en el calendario. El aviso al abrir la app se puede desactivar desde el perfil. Los avisos del navegador requieren permiso y se programan mientras la app permanece abierta; el aviso al abrir sirve como recordatorio adicional.
 
-La sección “Consumo del periodo” permite imprimir el calendario y las tomas del mes, semana o año seleccionados, o guardarlos como PDF desde el diálogo de impresión del dispositivo.
+El informe se abre desde **Informe para el médico** en escritorio o el icono de documento en móvil. Es un modal independiente con periodo, fecha de referencia y filtro de tomas ocasionales, tratamientos o ambas. La impresión incluye únicamente el informe con cantidades por medicamento y una tabla de fechas, horas y tipo de toma; permite guardarlo como PDF desde el diálogo del dispositivo.
 
 ## GitHub Pages
 

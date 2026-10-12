@@ -1,4 +1,4 @@
-const CACHE = "pastillas-shell-v2";
+const CACHE = "pastillas-shell-v3";
 const SHELL = ["./", "./manifest.webmanifest", "./icon.svg"];
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)));
@@ -10,7 +10,7 @@ self.addEventListener("activate", (e) => {
       .keys()
       .then((keys) =>
         Promise.all(
-          keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)),
+          keys.filter((k) => k.startsWith("pastillas-shell-") && k !== CACHE).map((k) => caches.delete(k)),
         ),
       ),
   );

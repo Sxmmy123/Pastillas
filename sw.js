@@ -1,5 +1,5 @@
-const CACHE = "pastillas-shell-v2";
-const SHELL = ["./", "./manifest.webmanifest", "./icon.svg"];
+const CACHE = "pastillas-shell-fe50afbbf5aa";
+const SHELL = ["./","./manifest.webmanifest","./icon.svg","./assets/firebase-CSXLdRJO.js","./assets/index-CFH8q8J_.js","./assets/index-gVAuWkPL.css","./assets/index.esm-CTjUmntZ.js","./assets/index.esm-DzJYQOOt.js","./assets/index.esm-ZtiLxdjX.js"];
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)));
   self.skipWaiting();
@@ -10,7 +10,7 @@ self.addEventListener("activate", (e) => {
       .keys()
       .then((keys) =>
         Promise.all(
-          keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)),
+          keys.filter((k) => k.startsWith("pastillas-shell-") && k !== CACHE).map((k) => caches.delete(k)),
         ),
       ),
   );
