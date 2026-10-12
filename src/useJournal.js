@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { OWNER, loadLocalSession, readRecords, readDeleted, readPlans, readReminders, nameKey, plansKey, prefsKey, writeJson, persistRecords, writeDeleted, mergeRecords, mergePlans, makeId } from "./storage";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { OWNER, loadLocalSession, readRecords, readDeleted, readPlans, readReminders, readSavedHistories, nameKey, plansKey, prefsKey, writeJson, persistRecords, writeDeleted, mergeRecords, mergePlans, makeId } from "./storage";
 import { timeForDay } from "./calendar";
 
 export const firebaseApi = () => Promise.all([import("./firebase"), import("firebase/auth"), import("firebase/firestore")]).then(([app, auth, store]) => ({ ...app, ...auth, ...store }));
@@ -11,9 +11,11 @@ export default function useJournal() {
   const [name, setName] = useState(boot.name), [reminders, setReminders] = useState(boot.reminders);
   const [cloud, setCloud] = useState(false), [cloudReady, setCloudReady] = useState(false), [sync, setSync] = useState("connecting"), [cloudError, setCloudError] = useState("");
   const [profileReady, setProfileReady] = useState(false);
+  const [loadedCloudRecords, setLoadedCloudRecords] = useState(null);
   const [dirty, setDirty] = useState(new Set()), [deleted, setDeleted] = useState(boot.deleted), [pendingDeletes, setPendingDeletes] = useState(boot.deleted), [retry, setRetry] = useState(0);
   const state = useRef({}); state.current = { uid, records, plans, name, reminders, deleted };
   const nameTouched = useRef(false), remindersTouched = useRef(false);
+  const savedHistories = useMemo(() => readSavedHistories(uid, records, plans), [uid, records, plans]);
 
   useEffect(() => {
     if (cloud) return;
@@ -31,7 +33,7 @@ export default function useJournal() {
         persistRecords(all, user.uid); writeJson(plansKey(user.uid), combinedPlans); writeJson(prefsKey(user.uid), { remindersEnabled: reminderValue }); writeDeleted(tombstones, user.uid);
         localStorage.setItem(OWNER, user.uid); if (profileName) localStorage.setItem(nameKey(user.uid), profileName);
         setRecords(all); setPlans(combinedPlans); setName(profileName); setReminders(reminderValue); setDeleted(tombstones); setPendingDeletes(tombstones);
-        setUid(user.uid); setCloud(true); setSync("syncing");
+        setUid(user.uid); setCloudReady(false); setProfileReady(false); setLoadedCloudRecords(null); setCloud(true); setSync("syncing");
       } catch (error) { if (live) { setCloudError(error.code || "No se pudo conectar con Firebase."); setSync("local"); } }
     })();
     return () => { live = false; };
@@ -46,13 +48,13 @@ export default function useJournal() {
         if (!live) return;
         const remote = snapshot.docs.map((item) => ({ ...item.data(), id: item.id })), data = profile.exists() ? profile.data() : {};
         const current = state.current, all = mergeRecords(current.records, remote, current.deleted), known = new Map(remote.map((item) => [item.id, item]));
-        setRecords(all); persistRecords(all, uid);
+        state.current.records = all; setRecords(all); persistRecords(all, uid); setLoadedCloudRecords(remote.length);
         setDirty((old) => { const next = new Set(old); all.forEach((item) => { const other = known.get(item.id); if (!other || Number(item.updatedAt) > Number(other.updatedAt || 0)) next.add(item.id); }); return next; });
         const combined = mergePlans(current.plans, Array.isArray(data.plans) ? data.plans : []); setPlans(combined); writeJson(plansKey(uid), combined);
         if (!nameTouched.current && data.displayName) { setName(data.displayName); localStorage.setItem(nameKey(uid), data.displayName); }
         if (!remindersTouched.current && typeof data.remindersEnabled === "boolean") { setReminders(data.remindersEnabled); writeJson(prefsKey(uid), { remindersEnabled: data.remindersEnabled }); }
         setCloudReady(true); setProfileReady(true); setCloudError(""); setSync("online");
-      } catch (error) { if (live) { setCloudReady(true); setCloudError(error.code || "La nube no está disponible."); setSync("local"); } }
+      } catch (error) { if (live) { setCloudReady(false); setProfileReady(false); setCloudError(error.code || "La nube no está disponible."); setSync("local"); } }
     })();
     return () => { live = false; };
   }, [uid, cloud, retry]);
@@ -130,5 +132,23 @@ export default function useJournal() {
   function togglePlan(plan) { const next = state.current.plans.map((item) => item.id === plan.id ? { ...item, active: !item.active, updatedAt: Date.now() } : item); writeJson(plansKey(uid), next); state.current.plans = next; setPlans(next); }
   function saveName(value) { nameTouched.current = true; setName(value); try { localStorage.setItem(nameKey(uid), value); } catch {} }
   function changeReminders(value) { remindersTouched.current = true; setReminders(value); }
-  return { uid, records, plans, name, reminders, sync, cloudError, saveRecord, takeDose, removeRecord, renameRecord, savePlan, togglePlan, saveName, changeReminders };
+  function reconnect() {
+    setCloudError(""); setCloudReady(false); setProfileReady(false);
+    setSync(cloud ? "syncing" : "connecting"); setRetry((n) => n + 1);
+  }
+  function restoreLocalHistory(historyUid) {
+    const current = state.current;
+    const history = readSavedHistories(current.uid, current.records, current.plans).find((item) => item.uid === historyUid);
+    if (!history) throw new Error("Esta copia ya está incluida en tu historial.");
+    const nextRecords = mergeRecords(history.records, current.records, current.deleted);
+    const nextPlans = mergePlans(history.plans, current.plans);
+    if (!persistRecords(nextRecords, current.uid) || !writeJson(plansKey(current.uid), nextPlans)) throw new Error("No se pudo guardar la copia recuperada. El historial original sigue conservado.");
+    state.current.records = nextRecords; state.current.plans = nextPlans;
+    setRecords(nextRecords); setPlans(nextPlans);
+    const imported = new Set(history.records.map((item) => item.id));
+    setDirty((old) => new Set([...old, ...nextRecords.filter((item) => imported.has(item.id)).map((item) => item.id)]));
+    if (!current.name && history.name !== "Historial anterior") saveName(history.name);
+    return history;
+  }
+  return { uid, records, plans, name, reminders, sync, cloudError, loadedCloudRecords, savedHistories, reconnect, restoreLocalHistory, saveRecord, takeDose, removeRecord, renameRecord, savePlan, togglePlan, saveName, changeReminders };
 }

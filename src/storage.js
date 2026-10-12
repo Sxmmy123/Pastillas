@@ -66,6 +66,31 @@ export function readRecords(uid, previous = uid) {
   const cached = keys.flatMap((key) => { const items = readJson(key, []); return Array.isArray(items) ? items : []; });
   return mergeRecords(readLegacyRecords(), cached, readDeleted(uid, previous));
 }
+
+// A refreshed anonymous sign-in must not make an older local copy unreachable.
+// Offer these copies explicitly instead of silently uploading another profile.
+export function readSavedHistories(uid, currentRecords = [], currentPlans = []) {
+  const histories = [], known = new Map(currentRecords.map((item) => [item.id, item]));
+  const knownPlans = new Map(currentPlans.map((item) => [item.id, item]));
+  const removed = readDeleted(uid);
+  try {
+    const prefix = RECORDS + ":", owners = new Set();
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.startsWith(prefix)) owners.add(key.slice(prefix.length));
+    }
+    for (const owner of owners) {
+      if (!owner || owner === uid) continue;
+      const cached = readJson(recordsKey(owner), []);
+      const records = mergeRecords([], Array.isArray(cached) ? cached : [], readDeleted(owner));
+      const plans = readPlans(owner);
+      const extra = records.filter((item) => !removed.has(item.id) && (!known.has(item.id) || Number(item.updatedAt || 0) > Number(known.get(item.id).updatedAt || 0)));
+      const extraPlans = plans.filter((item) => !knownPlans.has(item.id) || Number(item.updatedAt || 0) > Number(knownPlans.get(item.id).updatedAt || 0));
+      if (extra.length || extraPlans.length) histories.push({ uid: owner, name: localStorage.getItem(nameKey(owner)) || "Historial anterior", records, plans, count: extra.length, latest: records.map((item) => item.date).sort().at(-1) });
+    }
+  } catch {}
+  return histories.sort((a, b) => (b.latest || "").localeCompare(a.latest || ""));
+}
 export function persistRecords(items, uid) {
   // Keep a durable copy of the imported dates as well as their original keys.
   if (!writeJson(recordsKey(uid), items)) return false;

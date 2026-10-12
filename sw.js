@@ -1,5 +1,5 @@
-const CACHE = "pastillas-shell-364d2eaa0dab";
-const SHELL = ["./","./apple-touch-icon.png","./icon-192.png","./icon-512.png","./icon-maskable-512.png","./icon.svg","./manifest.webmanifest","./assets/firebase-CSXLdRJO.js","./assets/index-CqzalLv2.js","./assets/index-DUn-MBCs.css","./assets/index.esm-CTjUmntZ.js","./assets/index.esm-DzJYQOOt.js","./assets/index.esm-ZtiLxdjX.js"];
+const CACHE = "pastillas-shell-5ef029673262";
+const SHELL = ["./","./apple-touch-icon.png","./icon-192.png","./icon-512.png","./icon-maskable-512.png","./icon.svg","./manifest.webmanifest","./assets/firebase-CSXLdRJO.js","./assets/index-Bi_fl4zb.css","./assets/index-CcmY4_ij.js","./assets/index.esm-CTjUmntZ.js","./assets/index.esm-DzJYQOOt.js","./assets/index.esm-ZtiLxdjX.js"];
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)));
   self.skipWaiting();

@@ -25,6 +25,8 @@ Las reglas permiten a cada usuario anónimo acceder solo a usuarios/{uid} y sus 
 
 El nombre es una etiqueta visible, no una credencial. La identidad anónima se conserva en ese navegador, pero no se recupera automáticamente en otro dispositivo o después de borrar los datos del navegador.
 
+En **Perfil y recordatorios** se muestra el identificador completo, la cantidad de tomas disponibles y las cargadas desde Firebase. **Volver a cargar desde Firebase** reintenta la lectura tras corregir reglas o conexión. Los errores aparecen también sobre el calendario; si la lectura inicial falla, no se inicia una subida que pueda ocultar ese fallo. Si cambia la sesión anónima, las copias de perfiles anteriores siguen en LocalStorage y se ofrecen en el perfil para recuperarlas con confirmación. La recuperación combina tomas y tratamientos sin duplicar identificadores ni borrar la copia original. Esto recupera datos que ya existen en este navegador; un historial remoto de otra identidad sigue requiriendo esa sesión o una recuperación administrativa en Firebase.
+
 ## Registros anteriores
 
 Las claves antiguas YYYY-MM-DD con valor tomada se conservan intactas. La app las lee al iniciar, sin esperar a Firebase y aunque cambie la identidad anónima, y las presenta como “Pastilla sin especificar · hora no registrada”. También guarda una copia duradera en el historial actual y las sincroniza asociadas al usuario anónimo cuando Firebase está disponible. Puedes pulsar una pastilla registrada para añadir o corregir su nombre en un modal, incluso en los registros históricos: se mantienen su fecha y hora y las claves originales de LocalStorage. El enlace bajo el calendario lleva al mes del último registro histórico.
