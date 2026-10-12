@@ -35,4 +35,4 @@ La sección “Consumo del periodo” permite imprimir el calendario y las tomas
 
 ## GitHub Pages
 
-El workflow de .github/workflows/pages.yml construye y publica dist en cada push a main. En Settings > Pages, selecciona GitHub Actions como publishing source.
+El workflow de .github/workflows/pages.yml construye y publica dist en cada push a main. También copia el build a la raíz para que la página funcione si GitHub Pages está configurado para publicar main desde la carpeta raíz. Después de cambiar la app, ejecuta `npm run build:pages` antes de confirmar los cambios.

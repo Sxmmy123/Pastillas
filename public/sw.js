@@ -1,4 +1,4 @@
-const CACHE = "pastillas-shell-v1";
+const CACHE = "pastillas-shell-v2";
 const SHELL = ["./", "./manifest.webmanifest", "./icon.svg"];
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)));
