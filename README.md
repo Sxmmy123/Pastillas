@@ -1,6 +1,6 @@
 # Pastillas
 
-Registro personal de medicamentos hecho con React, Vite, Firebase y modo PWA. Tiene dos calendarios con vistas de mes, semana y año: **Mis tomas** para uso ocasional y registros históricos, y **Tratamientos** para medicación programada. Pulsa una fecha para abrir sus detalles; las tomas aparecen como etiquetas bajo el número del día. La semana muestra el medicamento, su icono, hora y estado.
+Registro personal de medicamentos hecho con React, Vite, Firebase y modo PWA. Tiene dos calendarios con vistas de mes, semana y año: **Mis tomas** para uso ocasional y registros históricos, y **Tratamientos** para medicación programada. En móvil, desliza horizontalmente el calendario para cambiar de periodo; en escritorio, usa las flechas grandes de sus costados. Pulsa una fecha para abrir sus detalles; las tomas aparecen como etiquetas con un pequeño icono de pastilla bajo el número del día, también en móvil. La semana muestra el medicamento, su icono, hora y estado.
 
 ## Desarrollo
 
@@ -27,13 +27,15 @@ El nombre es una etiqueta visible, no una credencial. La identidad anónima se c
 
 ## Registros anteriores
 
-Las claves antiguas YYYY-MM-DD con valor tomada se conservan intactas. La app las lee al iniciar, sin esperar a Firebase y aunque cambie la identidad anónima, y las presenta como “Pastilla sin especificar · hora no registrada”. También guarda una copia duradera en el historial actual y las sincroniza asociadas al usuario anónimo cuando Firebase está disponible. El enlace bajo el calendario lleva al mes del último registro histórico.
+Las claves antiguas YYYY-MM-DD con valor tomada se conservan intactas. La app las lee al iniciar, sin esperar a Firebase y aunque cambie la identidad anónima, y las presenta como “Pastilla sin especificar · hora no registrada”. También guarda una copia duradera en el historial actual y las sincroniza asociadas al usuario anónimo cuando Firebase está disponible. Puedes pulsar una pastilla registrada para añadir o corregir su nombre en un modal, incluso en los registros históricos: se mantienen su fecha y hora y las claves originales de LocalStorage. El enlace bajo el calendario lleva al mes del último registro histórico.
 
 LocalStorage pertenece a un navegador y un origen concretos. Para recuperar las fechas anteriores debes abrir el mismo navegador y la dirección donde las guardaste. Un navegador integrado, otro perfil, otro dispositivo o una página local no pueden acceder a ese almacenamiento. La aplicación nunca borra las claves originales ni inventa un medicamento u hora para esas fechas.
 
 ## Registro rápido
 
-El botón + en móvil y Registrar toma en escritorio abren el modal de registro. Las seis pastillas más registradas se ordenan por frecuencia, agrupando nombres con diferencias de mayúsculas, acentos y espacios, y se guardan con un toque. Estos botones representan frecuencia de uso registrada; no son recomendaciones de consumo. También puedes escribir otra pastilla y ajustar fecha u hora para recuperar una toma olvidada. Las tomas nuevas conservan los segundos; en el detalle se muestra el tiempo desde la toma anterior del mismo medicamento y, para tratamientos, la diferencia con la hora prevista.
+El botón + en móvil y Registrar toma en escritorio abren el modal de registro. Puedes guardar una toma sin nombre; aparecerá como “Pastilla sin especificar” y podrás nombrarla después al pulsarla. Las seis pastillas con nombre más registradas se ordenan por frecuencia, agrupando diferencias de mayúsculas, acentos y espacios, y se guardan con un toque. Las tomas sin especificar no aparecen en estos botones; los registros históricos cuentan una vez que les añades un nombre. Estos botones representan frecuencia de uso registrada; no son recomendaciones de consumo. También puedes escribir otra pastilla y ajustar fecha u hora para recuperar una toma olvidada. Las tomas nuevas conservan los segundos; en el detalle se muestra el tiempo desde la toma anterior del mismo medicamento y, para tratamientos, la diferencia con la hora prevista.
+
+Sobre el calendario hay un catálogo compacto con los nombres de pastillas ya registradas. Pulsa una para abrir el registro o arrástrala hasta un día: en escritorio, arrastra directamente; en móvil, mantén pulsado y luego arrastra. Al soltarla en hoy se guarda la hora exacta actual. Para fechas anteriores se abre un modal que exige elegir la hora real de la toma; las fechas futuras no aceptan registros por arrastre.
 
 ## Tratamientos y avisos
 

@@ -1,6 +1,9 @@
 export const dayKey = (date) => date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0") + "-" + String(date.getDate()).padStart(2, "0");
 export const today = () => dayKey(new Date());
 export const norm = (value) => String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim().replace(/\s+/g, " ");
+export const UNSPECIFIED = "Pastilla sin especificar";
+export const isNamedMedicine = (name) => !!norm(name) && ![norm(UNSPECIFIED), "sin especificar"].includes(norm(name));
+export const medicineLabel = (name) => isNamedMedicine(name) ? String(name).trim() : UNSPECIFIED;
 export const timeLabel = (stamp, seconds = false) => stamp ? new Intl.DateTimeFormat("es-BO", { hour: "2-digit", minute: "2-digit", ...(seconds ? { second: "2-digit" } : {}), hourCycle: "h23" }).format(new Date(stamp)) : "";
 export const atTime = (day, time) => time ? new Date(day + "T" + time + (time.length === 5 ? ":00" : "")).getTime() : null;
 export const timeForDay = (day) => day === today() ? Date.now() : atTime(day, timeLabel(Date.now(), true));
@@ -40,7 +43,7 @@ export function entriesFor(date, section, records, plans) {
 }
 export function frequentMedicines(records) {
   const map = new Map();
-  records.filter((item) => item.status === "taken" && !item.legacy && item.medicine).forEach((item) => {
+  records.filter((item) => item.status === "taken" && isNamedMedicine(item.medicine)).forEach((item) => {
     const key = norm(item.medicine), old = map.get(key) || { name: item.medicine, count: 0, latest: 0 };
     old.count++; if ((item.takenAt || 0) >= old.latest) { old.name = item.medicine; old.latest = item.takenAt || 0; } map.set(key, old);
   });

@@ -110,6 +110,13 @@ export default function useJournal() {
     setDeleted((old) => { const next = new Set(old).add(record.id); writeDeleted(next, state.current.uid); state.current.deleted = next; return next; });
     setPendingDeletes((old) => new Set(old).add(record.id)); setDirty((old) => { const next = new Set(old); next.delete(record.id); return next; });
   }
+  function renameRecord(recordId, medicine) {
+    const existing = state.current.records.find((item) => item.id === recordId);
+    if (!existing) throw new Error("Esta toma ya no está en tu historial.");
+    const updated = { ...existing, medicine: medicine.trim(), updatedAt: Math.max(Date.now(), Number(existing.updatedAt || 0) + 1) };
+    store(state.current.records.map((item) => item.id === recordId ? updated : item));
+    setDirty((old) => new Set(old).add(recordId)); return updated;
+  }
   function savePlan(plan) {
     const next = [...state.current.plans, plan];
     if (!writeJson(plansKey(state.current.uid), next)) throw new Error("No se pudo guardar el tratamiento en este navegador.");
@@ -118,5 +125,5 @@ export default function useJournal() {
   function togglePlan(plan) { const next = state.current.plans.map((item) => item.id === plan.id ? { ...item, active: !item.active, updatedAt: Date.now() } : item); writeJson(plansKey(uid), next); state.current.plans = next; setPlans(next); }
   function saveName(value) { nameTouched.current = true; setName(value); try { localStorage.setItem(nameKey(uid), value); } catch {} }
   function changeReminders(value) { remindersTouched.current = true; setReminders(value); }
-  return { uid, records, plans, name, reminders, sync, cloudError, saveRecord, takeDose, removeRecord, savePlan, togglePlan, saveName, changeReminders };
+  return { uid, records, plans, name, reminders, sync, cloudError, saveRecord, takeDose, removeRecord, renameRecord, savePlan, togglePlan, saveName, changeReminders };
 }

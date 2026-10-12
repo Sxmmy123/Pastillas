@@ -1,6 +1,7 @@
 export const OWNER = "pastillas:owner";
 const RECORDS = "pastillas:records:v1";
 const DELETED = "pastillas:deleted:v1";
+const LEGACY_NAMES = "pastillas:legacy-names:v1";
 export const recordsKey = (uid) => RECORDS + ":" + uid;
 export const plansKey = (uid) => "pastillas:plans:v1:" + uid;
 export const prefsKey = (uid) => "pastillas:settings:v1:" + uid;
@@ -30,13 +31,15 @@ export function writeDeleted(ids, uid) { return writeJson(DELETED + ":" + uid, [
 // Read them independently from the account namespace; never edit or remove them.
 export function readLegacyRecords() {
   const items = [];
+  const labels = readJson(LEGACY_NAMES, {});
   try {
     for (let i = 0; i < localStorage.length; i++) {
       const date = localStorage.key(i);
       if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date) || localStorage.getItem(date) !== "tomada") continue;
       const parsed = new Date(date + "T12:00:00");
       if (Number.isNaN(parsed.getTime()) || parsed.getDate() !== Number(date.slice(-2))) continue;
-      items.push({ id: "legacy-" + date, medicine: "Pastilla sin especificar", date, status: "taken", takenAt: null, plannedTime: null, legacy: true, updatedAt: 0 });
+      const id = "legacy-" + date, label = labels?.[id];
+      items.push({ id, medicine: typeof label?.medicine === "string" ? label.medicine : "Pastilla sin especificar", date, status: "taken", takenAt: null, plannedTime: null, legacy: true, updatedAt: Number(label?.updatedAt) || 0 });
     }
   } catch {}
   return items;
@@ -59,7 +62,13 @@ export function readRecords(uid, previous = uid) {
 }
 export function persistRecords(items, uid) {
   // Keep a durable copy of the imported dates as well as their original keys.
-  return writeJson(recordsKey(uid), items);
+  if (!writeJson(recordsKey(uid), items)) return false;
+  const stored = readJson(LEGACY_NAMES, {}), labels = stored && typeof stored === "object" && !Array.isArray(stored) ? { ...stored } : {};
+  let changed = false;
+  items.filter((item) => item.legacy && Number(item.updatedAt) > 0).forEach((item) => {
+    if (Number(item.updatedAt) > Number(labels[item.id]?.updatedAt || 0)) { labels[item.id] = { medicine: item.medicine || "", updatedAt: item.updatedAt }; changed = true; }
+  });
+  return !changed || writeJson(LEGACY_NAMES, labels);
 }
 export function mergePlans(local, remote) {
   const map = new Map(local.map((item) => [item.id, item]));

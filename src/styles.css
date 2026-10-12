@@ -69,6 +69,19 @@ button:active:not(:disabled) { transform: translateY(1px); }
 .icon-button:hover { background: #edf5ef; color: #3c7454; }
 .text-button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-height: 36px; padding: 0; border: 0; background: transparent; color: #51876a; font-size: 12px; font-weight: 600; }
 .full-button { width: 100%; margin-top: 16px; }
+.medicine-catalog { margin: -5px 2px 20px; }
+.medicine-catalog-heading { display: flex; align-items: baseline; flex-wrap: wrap; gap: 5px 14px; margin-bottom: 10px; }
+.medicine-catalog-heading > span { color: #557e64; font-size: 12px; font-weight: 600; }
+.medicine-catalog-heading small { color: #8b9e92; font-size: 10px; line-height: 1.5; }
+.medicine-catalog-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.medicine-catalog-pill { display: inline-flex; align-items: center; gap: 8px; min-width: 0; max-width: 230px; min-height: 40px; padding: 7px 9px 7px 12px; border: 1px solid #dbe8df; border-radius: 24px; background: #fafffb; color: #4a795d; text-align: left; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; cursor: grab; }
+.medicine-catalog-pill:hover { border-color: #a6c9b0; background: #eaf5ed; }
+.medicine-catalog-pill:active { cursor: grabbing; }
+.medicine-catalog-pill > svg { flex: 0 0 auto; }
+.medicine-catalog-name { overflow: hidden; min-width: 0; font-size: 12px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
+.medicine-catalog-count { display: grid; place-items: center; flex: 0 0 auto; min-width: 23px; height: 23px; padding: 0 6px; margin-left: 3px; border-radius: 50%; background: #e6f0e7; color: #7c9983; font-size: 10px; }
+.medicine-catalog-ghost { z-index: 70; display: flex; align-items: center; gap: 7px; max-width: 230px; padding: 10px 15px; border: 1px solid #b1d5bd; border-radius: 23px; background: #eaf7ee; color: #3c7654; box-shadow: 0 10px 30px #24523725; transform: translate(12px, -50%); font-size: 12px; font-weight: 600; }
+.medicine-catalog-ghost > svg { flex: 0 0 auto; }
 .calendar-panel { padding: 20px 20px 0; border: 1px solid #e3ece5; border-radius: 23px; background: #fff; box-shadow: 0 10px 35px #37584408; }
 .calendar-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
 .calendar-navigation { display: flex; align-items: center; gap: 5px; }
@@ -78,12 +91,23 @@ button:active:not(:disabled) { transform: translateY(1px); }
 .calendar-mode { display: flex; gap: 3px; padding: 4px; border: 1px solid #e9efea; border-radius: 12px; background: #f5f8f5; }
 .calendar-mode button { min-height: 31px; padding: 0 13px; border: 0; border-radius: 8px; color: #8a9b8e; background: transparent; font-size: 11px; font-weight: 600; }
 .calendar-mode button.active { color: #397752; background: #fff; box-shadow: 0 2px 6px #284c3410; }
+.calendar-frame { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; align-items: center; gap: 12px; }
+.calendar-side-arrow { display: grid; place-items: center; width: 100%; height: 100px; padding: 0; border: 1px solid #e1ece4; border-radius: 22px; background: #f5faf6; color: #5b8b6b; }
+.calendar-side-arrow:hover { border-color: #b7d7c0; background: #eaf5ed; color: #316c48; }
+.calendar-swipe-viewport { min-width: 0; border-radius: 12px; }
+.calendar-swipe-viewport:focus-visible { outline: 3px solid #79b99a; outline-offset: 4px; }
+.calendar-body { min-width: 0; transform: translateX(var(--swipe-offset, 0px)); }
+.calendar-body.enter-next { animation: calendar-next .22s ease-out; }
+.calendar-body.enter-previous { animation: calendar-previous .22s ease-out; }
+@keyframes calendar-next { from { opacity: .6; transform: translateX(16px); } }
+@keyframes calendar-previous { from { opacity: .6; transform: translateX(-16px); } }
+.calendar-swipe-hint { display: none; }
 .calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
 .calendar-weekday { display: grid; place-items: center; height: 29px; color: #9eaaa2; font-size: 10px; font-weight: 500; }
-.calendar-day { display: flex; align-items: stretch; flex-direction: column; gap: 7px; min-width: 0; min-height: clamp(90px, calc((100svh - 300px) / 6), 134px); padding: 9px 6px 7px; border: 1px solid #edf1ed; border-radius: 12px; color: #7d9182; background: #fdfefd; text-align: left; }
+.calendar-day { display: flex; align-items: stretch; flex-direction: column; gap: 7px; min-width: 0; min-height: clamp(90px, calc((100svh - 300px) / 6), 134px); padding: 9px 6px 7px; border: 1px solid #edf1ed; border-radius: 12px; color: #7d9182; background: #fdfefd; text-align: left; cursor: pointer; }
 .calendar-day:hover { background: #f3f9f4; border-color: #c8dece; }
 .calendar-day.selected { border-color: #76b48c; background: #f1f8f2; box-shadow: inset 0 0 0 1px #76b48c25; }
-.day-number { display: grid; place-items: center; align-self: flex-start; width: 25px; height: 25px; margin-left: 3px; border-radius: 50%; font-size: 12px; font-weight: 500; }
+.day-number { display: grid; place-items: center; align-self: flex-start; width: 25px; height: 25px; margin-left: 3px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: inherit; font-size: 12px; font-weight: 500; }
 .is-today .day-number { background: #347e59; color: #fff; font-weight: 700; }
 .day-pills { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .medicine-mark { display: inline-grid; place-items: center; flex: 0 0 auto; width: 42px; height: 42px; border-radius: 13px; background: var(--tone-bg); color: var(--tone-ink); }
@@ -97,7 +121,8 @@ button:active:not(:disabled) { transform: translateY(1px); }
 .sun { --tone-bg: #faf2dd; --tone-ink: #8b6d32; }
 .teal { --tone-bg: #e3f2ef; --tone-ink: #40766e; }
 .neutral { --tone-bg: #edf0ec; --tone-ink: #68776b; }
-.calendar-pill { display: flex; align-items: center; gap: 4px; min-width: 0; min-height: 23px; padding: 3px 5px; border: 1px solid transparent; border-radius: 6px; background: var(--tone-bg); color: var(--tone-ink); }
+.calendar-pill { display: flex; align-items: center; gap: 4px; width: 100%; min-width: 0; min-height: 23px; padding: 3px 5px; border: 1px solid transparent; border-radius: 6px; background: var(--tone-bg); color: var(--tone-ink); text-align: left; }
+.calendar-pill:hover { border-color: var(--tone-ink); }
 .calendar-pill .medicine-mark { width: 17px; height: 17px; background: transparent; border-radius: 0; }
 .calendar-pill .medicine-mark svg { width: 18px; height: 18px; }
 .pill-copy { display: flex; flex: 1; flex-direction: column; gap: 4px; min-width: 0; }
@@ -105,15 +130,15 @@ button:active:not(:disabled) { transform: translateY(1px); }
 .pill-copy small { font-size: 9px; line-height: 1.4; }
 .pill-check { flex: 0 0 auto; opacity: .7; }
 .pill-planned { border-color: color-mix(in srgb, var(--tone-ink) 22%, transparent); border-style: dashed; background: color-mix(in srgb, var(--tone-bg) 55%, white); }
-.more-doses { padding: 2px 4px; color: #9aa99d; font-size: 9px; }
+.more-doses { align-self: flex-start; padding: 2px 4px; border: 0; background: transparent; color: #9aa99d; font-size: 9px; }
 .calendar-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 14px; padding: 15px 0; border-top: 1px solid #edf2ed; color: #97a59a; font-size: 10px; }
 .calendar-footer > span:first-child { display: flex; align-items: center; gap: 5px; color: #769881; }
 .calendar-footer b { color: #4d7a59; }
 .week-calendar { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 7px; }
-.week-day-card { display: flex; flex-direction: column; gap: 20px; min-width: 0; min-height: 400px; padding: 15px 6px; border: 1px solid #edf1ed; border-radius: 13px; color: #829a8a; background: #fdfefd; text-align: left; }
+.week-day-card { display: flex; flex-direction: column; gap: 20px; min-width: 0; min-height: 400px; padding: 15px 6px; border: 1px solid #edf1ed; border-radius: 13px; color: #829a8a; background: #fdfefd; text-align: left; cursor: pointer; }
 .week-day-card:hover { background: #f4faf5; }
 .week-day-card.selected { border-color: #8ebe9b; background: #f5faf4; }
-.week-date { display: flex; align-items: center; flex-direction: column; gap: 8px; }
+.week-date { display: flex; align-items: center; flex-direction: column; gap: 8px; width: 100%; padding: 0; border: 0; background: transparent; color: inherit; }
 .week-date small { font-size: 11px; text-transform: capitalize; }
 .week-date b { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; color: #61856b; font-size: 20px; font-weight: 500; }
 .week-day-card.is-today .week-date b { color: white; background: #3c845b; }
@@ -131,6 +156,7 @@ button:active:not(:disabled) { transform: translateY(1px); }
 .mini-calendar-grid .day-number { align-self: auto; width: 21px; height: 21px; margin: 0; font-size: 9px; }
 .mini-calendar-grid .selected { background: #ecf6ec; }
 .mini-dose-bar { position: absolute; bottom: 2px; width: 11px; height: 3px; border-radius: 3px; background: #83b58e; }
+.calendar-day.is-drop-target, .week-day-card.is-drop-target { border-color: #459968; background: #e2f4e6; box-shadow: inset 0 0 0 2px #45996850, 0 0 0 2px #45996818; }
 .history-link { display: flex; align-items: center; gap: 7px; width: 100%; margin-top: 16px; padding: 8px 3px; border: 0; background: transparent; color: #8a9d90; font-size: 11px; text-align: left; }
 .history-link > span:last-child { display: flex; align-items: center; gap: 3px; margin-left: auto; color: #578968; font-size: 10px; }
 .calendar-guidance { margin: 15px 3px; color: #95a498; font-size: 12px; line-height: 1.6; }
@@ -145,6 +171,7 @@ button:active:not(:disabled) { transform: translateY(1px); }
 .form-stack { display: flex; flex-direction: column; gap: 15px; }
 .form-stack .full-button { margin-top: 3px; }
 .field-label { display: flex; flex-direction: column; gap: 8px; min-width: 0; color: #6b8573; font-size: 12px; font-weight: 500; }
+.optional-label { margin-left: 6px; color: #a0afa1; font-size: 10px; font-weight: 400; }
 .field-label input, .field-label select { width: 100%; min-width: 0; height: 46px; padding: 0 12px; border: 1px solid #e1eae2; border-radius: 11px; outline-color: #8cbb9d; background: #fcfefc; color: #3d6248; font-size: 14px; }
 .field-label input::placeholder { color: #b0bcb1; }
 .form-two-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; }
@@ -172,6 +199,9 @@ button:active:not(:disabled) { transform: translateY(1px); }
 .dose-row, .treatment-card { display: flex; align-items: center; gap: 12px; padding: 13px 11px; border: 1px solid #e8eee5; border-radius: 14px; background: #fcfefb; }
 .dose-copy, .treatment-copy { display: flex; flex-direction: column; flex: 1; gap: 7px; min-width: 0; }
 .dose-copy h3, .treatment-copy b { margin: 0; color: #456d4c; font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+.dose-name-button { display: flex; align-items: center; align-self: flex-start; gap: 7px; max-width: 100%; padding: 0; border: 0; background: transparent; color: #456d4c; font-size: 14px; font-weight: 600; text-align: left; overflow-wrap: anywhere; }
+.dose-name-button svg { flex: 0 0 auto; color: #98b39b; }
+.dose-name-button:hover { color: #286c42; }
 .dose-status { display: flex; align-items: center; gap: 4px; color: #9f997e; font-size: 11px; }
 .dose-status.taken { color: #7b9f7c; }
 .dose-copy small, .treatment-copy small { color: #a0b09b; font-size: 10px; line-height: 1.6; }
@@ -231,8 +261,10 @@ button:active:not(:disabled) { transform: translateY(1px); }
 
 @media (max-width: 1150px) {
   .calendar-toolbar { flex-wrap: wrap; }
+  .calendar-frame { grid-template-columns: 32px minmax(0, 1fr) 32px; gap: 8px; }
+  .calendar-side-arrow { height: 90px; }
   .year-calendar { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .calendar-footer > span:last-child { display: none; }
+  .calendar-desktop-hint { display: none; }
   .page-heading h1 { font-size: 28px; }
   .calendar-pill .pill-check { display: none; }
 }
@@ -253,26 +285,39 @@ button:active:not(:disabled) { transform: translateY(1px); }
   .desktop-action { display: none; }
   .manage-button { min-height: 39px; padding: 0 11px; }
   .manage-button span { display: none; }
+  .medicine-catalog { margin: -2px 1px 17px; }
+  .medicine-catalog-heading { gap: 3px; flex-direction: column; margin-bottom: 9px; }
+  .medicine-catalog-heading > span { font-size: 11px; }
+  .medicine-catalog-heading small { font-size: 9px; }
+  .medicine-catalog-list { gap: 7px; }
+  .medicine-catalog-pill { flex: 0 1 calc(50% - 4px); max-width: calc(50% - 4px); gap: 6px; min-height: 40px; padding: 7px 8px 7px 10px; }
+  .medicine-catalog-name { flex: 1; font-size: 11px; }
+  .medicine-catalog-count { min-width: 21px; height: 21px; padding: 0 4px; margin-left: 0; font-size: 9px; }
   .calendar-panel { padding: 13px 10px 0; border-radius: 18px; }
   .calendar-toolbar { flex-direction: column; gap: 11px; margin-bottom: 10px; }
   .calendar-navigation { width: 100%; gap: 0; }
   .calendar-navigation h2 { flex: 1; min-width: 0; margin: 0; font-size: 13px; }
-  .calendar-navigation .icon-button { width: 31px; }
   .today-button { min-height: 32px; margin-left: 5px; padding: 0 10px; font-size: 10px; }
   .calendar-mode { width: 100%; }
   .calendar-mode button { flex: 1; min-height: 31px; }
+  .calendar-frame { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .calendar-side-arrow { display: none; }
+  .calendar-swipe-viewport { overflow: hidden; touch-action: pan-y pinch-zoom; }
+  .calendar-swipe-hint { display: inline; }
   .calendar-grid { gap: 4px; }
   .calendar-weekday { height: 25px; font-size: 9px; }
   .calendar-day { gap: 6px; min-height: clamp(68px, calc((100svh - 405px) / 6), 100px); padding: 5px 3px; border-radius: 9px; }
   .day-number { width: 22px; height: 22px; margin-left: 0; font-size: 11px; }
-  .calendar-pill { gap: 0; min-height: 18px; padding: 3px 4px; border-radius: 5px; }
-  .day-pills .medicine-mark, .day-pills .pill-check { display: none; }
+  .calendar-pill { gap: 2px; min-height: 19px; padding: 3px 2px; border-radius: 5px; }
+  .day-pills .medicine-mark { display: inline-grid; width: 12px; height: 12px; }
+  .day-pills .medicine-mark svg { width: 14px; height: 14px; }
+  .day-pills .pill-check { display: none; }
   .day-pills .pill-copy b { font-size: 9px; }
   .more-doses { padding: 0 1px; font-size: 8px; }
   .calendar-footer { margin-top: 12px; padding: 13px 0; font-size: 9px; }
   .week-calendar { grid-template-columns: 1fr; gap: 7px; }
   .week-day-card { flex-direction: row; align-items: flex-start; gap: 13px; min-height: 82px; padding: 13px 11px; }
-  .week-date { flex: 0 0 34px; gap: 5px; }
+  .week-date { flex: 0 0 34px; width: 34px; gap: 5px; }
   .week-date small { font-size: 10px; }
   .week-date b { width: 31px; height: 31px; font-size: 19px; }
   .week-pills { flex: 1; }
@@ -307,6 +352,7 @@ button:active:not(:disabled) { transform: translateY(1px); }
   .frequent-button b { font-size: 12px; }
   .dose-row { gap: 9px; padding: 12px 9px; }
   .dose-copy h3 { font-size: 13px; }
+  .dose-name-button { font-size: 13px; }
   .dose-status { font-size: 10px; }
   .dose-copy small { font-size: 9px; }
   .take-button { gap: 3px; padding: 0 7px; font-size: 10px; }
