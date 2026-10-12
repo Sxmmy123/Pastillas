@@ -1,6 +1,6 @@
 # Pastillas
 
-Registro personal de medicamentos hecho con React, Vite, Firebase y modo PWA. Tiene dos calendarios con vistas de mes, semana y año: **Mis tomas** para uso ocasional y registros históricos, y **Tratamientos** para medicación programada. En móvil, desliza horizontalmente el calendario para cambiar de periodo; en escritorio, usa las flechas grandes de sus costados. Pulsa una fecha para abrir sus detalles; las tomas aparecen como etiquetas con un pequeño icono de pastilla bajo el número del día, también en móvil. La semana muestra el medicamento, su icono, hora y estado.
+Registro personal de medicamentos hecho con React, Vite, Firebase y modo PWA. Tiene dos calendarios con vistas de mes, semana y año: **Mis tomas** para uso ocasional y registros históricos, y **Tratamientos** para medicación programada. En móvil, desliza horizontalmente el calendario para cambiar de periodo; en escritorio, usa las flechas grandes de sus costados. Pulsa una fecha para abrir sus detalles. El mes muestra únicamente pequeños iconos de pastilla bajo el día; la semana muestra el medicamento, su icono, hora y estado. El año mantiene la vista compacta. Los gestos táctiles se procesan directamente y conservan el desplazamiento vertical de la página.
 
 ## Desarrollo
 
@@ -41,7 +41,7 @@ Sobre el calendario hay un catálogo compacto con los nombres de pastillas ya re
 
 Cada tratamiento permite elegir fecha inicial, hora, repetición en días o semanas y duración en días, semanas, meses o sin fecha final. Los tratamientos pausados dejan de crear tomas futuras en el calendario. El aviso al abrir la app se puede desactivar desde el perfil. Los avisos del navegador requieren permiso y se programan mientras la app permanece abierta; el aviso al abrir sirve como recordatorio adicional.
 
-El informe se abre desde **Informe para el médico** en escritorio o el icono de documento en móvil. Es un modal independiente con periodo, fecha de referencia y filtro de tomas ocasionales, tratamientos o ambas. La impresión incluye únicamente el informe con cantidades por medicamento y una tabla de fechas, horas y tipo de toma; permite guardarlo como PDF desde el diálogo del dispositivo.
+El informe se abre desde **Informe para el médico** en escritorio o el icono de documento en móvil. Es un modal independiente con periodo, selector de mes para la consulta mensual y filtro de tomas ocasionales, tratamientos o ambas. Una tabla resume las tomas por medicamento, los días con consumo y el porcentaje de registros del periodo; las tomas sin nombre se agrupan como sin especificar. Otra tabla conserva el detalle de fechas, horas y tipo de toma. La impresión incluye únicamente el informe y permite guardarlo como PDF desde el diálogo del dispositivo.
 
 ## GitHub Pages
 

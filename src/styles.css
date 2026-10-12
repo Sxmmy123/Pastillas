@@ -22,6 +22,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 button { transition: background .18s, border-color .18s, transform .18s; }
 button:active:not(:disabled) { transform: translateY(1px); }
 ::selection { background: #ccead8; color: #244f3e; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
 .app-shell { min-height: 100svh; }
 .desktop-sidebar { position: fixed; inset: 0 auto 0 0; z-index: 10; display: flex; flex-direction: column; width: 230px; padding: 32px 18px 20px; border-right: 1px solid var(--line); background: #fff; }
 .brand { display: flex; align-items: center; gap: 11px; margin: 0 7px 50px; color: var(--ink); text-decoration: none; font: 800 23px Manrope, sans-serif; letter-spacing: -1px; }
@@ -109,7 +110,7 @@ button:active:not(:disabled) { transform: translateY(1px); }
 .calendar-day.selected { border-color: #76b48c; background: #f1f8f2; box-shadow: inset 0 0 0 1px #76b48c25; }
 .day-number { display: grid; place-items: center; align-self: flex-start; width: 25px; height: 25px; margin-left: 3px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: inherit; font-size: 12px; font-weight: 500; }
 .is-today .day-number { background: #347e59; color: #fff; font-weight: 700; }
-.day-pills { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.day-pills { display: flex; flex-wrap: wrap; align-content: flex-start; align-items: center; gap: 3px; min-width: 0; }
 .medicine-mark { display: inline-grid; place-items: center; flex: 0 0 auto; width: 42px; height: 42px; border-radius: 13px; background: var(--tone-bg); color: var(--tone-ink); }
 .medicine-mark svg { width: 31px; height: 31px; }
 .medicine-mark.small { width: 28px; height: 28px; border-radius: 9px; }
@@ -125,6 +126,11 @@ button:active:not(:disabled) { transform: translateY(1px); }
 .calendar-pill:hover { border-color: var(--tone-ink); }
 .calendar-pill .medicine-mark { width: 17px; height: 17px; background: transparent; border-radius: 0; }
 .calendar-pill .medicine-mark svg { width: 18px; height: 18px; }
+.calendar-pill.pill-icon-only { justify-content: center; width: 25px; min-height: 25px; padding: 0; border-radius: 7px; background: transparent; }
+.calendar-pill.pill-icon-only:hover { background: var(--tone-bg); }
+.calendar-pill.pill-icon-only .medicine-mark { width: 23px; height: 23px; }
+.calendar-pill.pill-icon-only .medicine-mark svg { width: 26px; height: 26px; }
+.calendar-pill.pill-icon-only.pill-planned { background: color-mix(in srgb, var(--tone-bg) 55%, white); }
 .pill-copy { display: flex; flex: 1; flex-direction: column; gap: 4px; min-width: 0; }
 .pill-copy b { overflow: hidden; font-size: 10px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 .pill-copy small { font-size: 9px; line-height: 1.4; }
@@ -245,14 +251,17 @@ button:active:not(:disabled) { transform: translateY(1px); }
 .report-content { padding: 21px; border: 1px solid #e4ecdc; border-radius: 14px; background: #fdfefb; }
 .report-title h2 { margin: 7px 0; color: #61834e; font: 700 19px Manrope, sans-serif; }
 .report-title p { margin: 0; color: #9aad8a; font-size: 12px; }
+.report-title .report-scope { margin-top: 8px; color: #7f9a6b; font-size: 11px; }
+.report-section-title { margin: 21px 0 8px; color: #6d8d59; font-size: 12px; font-weight: 600; }
 .report-summary { display: flex; flex-wrap: wrap; gap: 16px; margin: 22px 0 15px; padding: 12px 0; border-block: 1px solid #e7eddc; color: #9db185; font-size: 11px; }
 .report-summary b { color: #759d58; }
-.report-totals { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 19px; }
-.report-totals span { display: flex; gap: 9px; padding: 6px 9px; border-radius: 7px; background: #edf4e1; color: #90a770; font-size: 10px; }
 .report-table-wrap { overflow-x: auto; }
 .report-table { width: 100%; border-collapse: collapse; color: #7d9860; font-size: 11px; text-align: left; }
 .report-table th { padding: 12px 8px; border-bottom: 1px solid #dfe8cd; color: #a2b581; font-weight: 500; }
 .report-table td { padding: 12px 8px; border-bottom: 1px solid #edf1e3; line-height: 1.5; vertical-align: top; }
+.report-statistics thead { background: #f1f6e9; }
+.report-statistics tbody th { color: #6f8c59; font-weight: 500; overflow-wrap: anywhere; }
+.report-statistics :is(th, td):not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
 .report-note { margin: 18px 0 0; color: #a8b992; font-size: 10px; line-height: 1.6; }
 .toast { position: fixed; z-index: 80; left: calc(50% + 115px); bottom: 25px; display: flex; align-items: center; gap: 9px; max-width: calc(100% - 40px); padding: 13px 16px; border: 1px solid #eff5e9; border-radius: 13px; background: #345f3f; color: #e4efdc; box-shadow: 0 12px 30px #345f3f24; transform: translateX(-50%); font-size: 12px; animation: fade-in .2s; }
 .toast button { display: grid; place-items: center; width: 26px; height: 26px; margin-left: 7px; border: 0; border-radius: 7px; background: #ffffff10; color: #c6d9b9; }
@@ -303,14 +312,17 @@ button:active:not(:disabled) { transform: translateY(1px); }
   .calendar-frame { grid-template-columns: minmax(0, 1fr); gap: 0; }
   .calendar-side-arrow { display: none; }
   .calendar-swipe-viewport { overflow: hidden; touch-action: pan-y pinch-zoom; }
+  .calendar-swipe-viewport * { touch-action: pan-y pinch-zoom; }
+  .calendar-body { user-select: none; -webkit-user-select: none; }
   .calendar-swipe-hint { display: inline; }
   .calendar-grid { gap: 4px; }
   .calendar-weekday { height: 25px; font-size: 9px; }
   .calendar-day { gap: 6px; min-height: clamp(68px, calc((100svh - 405px) / 6), 100px); padding: 5px 3px; border-radius: 9px; }
   .day-number { width: 22px; height: 22px; margin-left: 0; font-size: 11px; }
   .calendar-pill { gap: 2px; min-height: 19px; padding: 3px 2px; border-radius: 5px; }
-  .day-pills .medicine-mark { display: inline-grid; width: 12px; height: 12px; }
-  .day-pills .medicine-mark svg { width: 14px; height: 14px; }
+  .calendar-pill.pill-icon-only { width: 20px; min-height: 20px; border-radius: 5px; }
+  .calendar-pill.pill-icon-only .medicine-mark { width: 18px; height: 18px; }
+  .calendar-pill.pill-icon-only .medicine-mark svg { width: 24px; height: 24px; }
   .day-pills .pill-check { display: none; }
   .day-pills .pill-copy b { font-size: 9px; }
   .more-doses { padding: 0 1px; font-size: 8px; }
@@ -386,11 +398,13 @@ button:active:not(:disabled) { transform: translateY(1px); }
   .report-modal .modal-heading, .report-controls, .report-action { display: none !important; }
   .report-content { padding: 0; border: 0; background: white; }
   .report-title h2 { color: #222; }
-  .report-title p, .report-summary, .report-summary b, .report-note, .report-totals span, .report-table, .report-table th { color: #555; }
+  .report-title p, .report-summary, .report-summary b, .report-note, .report-section-title, .report-table, .report-table th { color: #555; }
   .report-table-wrap { overflow: visible; }
+  .report-section-title { break-after: avoid; }
+  .report-statistics { break-inside: avoid; }
   .report-table { font-size: 10pt; }
   .report-table td, .report-table th { padding: 9px 5px; border-color: #ccc; }
   .report-table tr { break-inside: avoid; }
   .report-table thead { display: table-header-group; }
-  .report-summary, .report-title, .report-totals { break-inside: avoid; }
+  .report-summary, .report-title { break-inside: avoid; }
 }

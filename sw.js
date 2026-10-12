@@ -1,5 +1,5 @@
-const CACHE = "pastillas-shell-a621989ac0b7";
-const SHELL = ["./","./manifest.webmanifest","./icon.svg","./assets/firebase-CSXLdRJO.js","./assets/index--JuEG0hE.js","./assets/index-CCzjtTW5.css","./assets/index.esm-CTjUmntZ.js","./assets/index.esm-DzJYQOOt.js","./assets/index.esm-ZtiLxdjX.js"];
+const CACHE = "pastillas-shell-664e8b22b2ba";
+const SHELL = ["./","./manifest.webmanifest","./icon.svg","./assets/firebase-CSXLdRJO.js","./assets/index-B8clensv.css","./assets/index-DtMHeSWD.js","./assets/index.esm-CTjUmntZ.js","./assets/index.esm-DzJYQOOt.js","./assets/index.esm-ZtiLxdjX.js"];
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)));
   self.skipWaiting();
