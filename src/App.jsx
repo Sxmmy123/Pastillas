@@ -44,29 +44,42 @@ function Modal({ title, sub, onClose, children, wide = false, report = false }) 
   </div>;
 }
 function cloudErrorMessage(code) {
-  if (code === "permission-denied") return "Firebase rechazó la lectura. Revisa las reglas de Firestore del proyecto regis-b73aa y que este identificador coincida con el del historial.";
+  if (code === "permission-denied") return "Falta publicar las nuevas reglas de Firebase para permitir la entrada por nombre. Tus registros anteriores siguen guardados.";
   if (code === "auth/admin-restricted-operation" || code === "auth/operation-not-allowed") return "Activa el acceso Anónimo en Authentication del proyecto regis-b73aa.";
   if (code === "unavailable" || code === "auth/network-request-failed") return "No se pudo conectar con Firebase. Comprueba tu conexión y vuelve a intentarlo.";
   return "No se pudo cargar o sincronizar el historial con Firebase. Tus copias locales se conservan.";
 }
 
-function ProfileModal({ journal, initials, permission, onClose, onToast, onRecover }) {
+function NameEntryModal({ name, onClose, onEnter }) {
+  const [value, setValue] = useState(name || ""), [busy, setBusy] = useState(false), [error, setError] = useState("");
+  return <Modal title="Entra a tu historial" sub="TU PERFIL, EN CUALQUIER DISPOSITIVO" onClose={onClose}>
+    <div className="name-entry-mark"><Med name="cápsula" /><p>Escribe tu nombre para abrir el mismo historial en tu celular o computadora.</p></div>
+    <form className="form-stack" onSubmit={async (event) => { event.preventDefault(); if (busy) return; setBusy(true); setError(""); try { await onEnter(value); } catch (cause) { setError(cause.message); setBusy(false); } }}>
+      <label className="field-label">Tu nombre<input autoFocus value={value} onChange={(event) => setValue(event.target.value)} placeholder="Ej. Sxmy" autoComplete="username" autoCapitalize="none" autoCorrect="off" maxLength={40} required disabled={busy} /></label>
+      <p className="hint">Usa siempre el mismo nombre, respetando las mayúsculas. Este dispositivo lo recordará.</p>
+      {error && <p className="form-error" role="alert">{error}</p>}
+      <button className="primary-button full-button" disabled={busy}>{busy ? <LoaderCircle size={18} className="spinner" /> : <ChevronRight size={18} />}{busy ? "Abriendo historial…" : "Entrar"}</button>
+    </form>
+  </Modal>;
+}
+
+function ProfileModal({ journal, initials, permission, onClose, onToast, onRecover, onChangeName }) {
   const [recovery, setRecovery] = useState(null), [error, setError] = useState("");
-  const { name, uid, records, reminders, cloudError, sync, loadedCloudRecords, savedHistories } = journal;
+  const { name, records, reminders, cloudError, sync, loadedCloudRecords, savedHistories } = journal;
   const busy = sync === "connecting" || sync === "syncing";
   return <Modal title="Perfil y recordatorios" sub="ESPACIO PERSONAL" onClose={onClose}>
-    <div className="profile-identity"><span className="avatar avatar-large">{initials}</span><div><b>{name || "Tu perfil"}</b><span>Identificador de este historial</span><code className="profile-uid">{uid}</code></div></div>
+    <div className="profile-identity"><span className="avatar avatar-large">{initials}</span><div><b>{name || "Tu perfil"}</b><span>{journal.profileId ? "Mismo nombre, mismo historial" : "Entra con tu nombre para compartir el historial"}</span></div></div>
     <div className="profile-data-summary"><span><b>{records.length}</b> tomas disponibles</span><span>{loadedCloudRecords === null ? "Firebase: pendiente de cargar" : <><b>{loadedCloudRecords}</b> tomas cargadas de Firebase</>}</span></div>
-    {cloudError && <div className="cloud-detail" role="alert"><b>No se pudo sincronizar</b><p>{cloudErrorMessage(cloudError)}</p><code>{cloudError}</code></div>}
+    {cloudError && <div className="cloud-detail" role="alert"><b>No se pudo sincronizar</b><p>{cloudErrorMessage(cloudError)}</p><code>{cloudError}</code>{cloudError === "permission-denied" && <p><a href="./configurar-firebase.html" target="_blank" rel="noreferrer">Copiar las nuevas reglas</a></p>}</div>}
     <button className="secondary-button full-button sync-retry" disabled={busy} onClick={journal.reconnect}>{busy ? <LoaderCircle size={17} className="spinner" /> : <Repeat2 size={17} />}{busy ? "Cargando historial…" : "Volver a cargar desde Firebase"}</button>
     {!!savedHistories.length && <section className="local-recovery"><h3>Historial guardado en este navegador</h3><p>Hay una copia de otra sesión. Puedes añadirla al historial actual conservando la original.</p>{savedHistories.map((history) => <button className="recovery-option" key={history.uid} onClick={() => { setRecovery(history); setError(""); }}><Clock3 size={18} /><span><b>{history.name}</b><small>{history.count} {history.count === 1 ? "toma por recuperar" : "tomas por recuperar"}{history.plans.length ? " · Con tratamientos" : ""}{history.latest ? " · " + dateLabel(history.latest, true) : ""}</small><code>{history.uid}</code></span><ChevronRight size={17} /></button>)}
       {recovery && <div className="recovery-confirm"><b>¿Añadir la copia de {recovery.name}?</b><p>Sus tomas y tratamientos se guardarán en este perfil y se sincronizarán con Firebase cuando esté disponible. La copia anterior se conserva.</p>{error && <p className="form-error" role="alert">{error}</p>}<div className="modal-actions"><button className="secondary-button" onClick={() => setRecovery(null)}>Cancelar</button><button className="primary-button" onClick={() => { try { const history = journal.restoreLocalHistory(recovery.uid); onRecover(history); } catch (cause) { setError(cause.message); } }}>Recuperar copia</button></div></div>}
     </section>}
     <div className="settings-divider" />
-    <form className="form-stack" onSubmit={(event) => { event.preventDefault(); const value = new FormData(event.currentTarget).get("displayName")?.toString().trim(); if (value) { journal.saveName(value); onClose(); onToast("Nombre guardado"); } }}><label className="field-label">Tu nombre<input name="displayName" defaultValue={name} placeholder="¿Cómo te llamamos?" maxLength={40} required /></label><button className="primary-button full-button">Guardar nombre</button></form>
+    <button className="secondary-button full-button" onClick={onChangeName}>{journal.profileId ? "Entrar con otro nombre" : "Entrar con mi nombre"}<ChevronRight size={17} /></button>
     <div className="settings-divider" /><div className="settings-line"><div><b>Recordatorio al abrir</b><span>Ver las tomas de tratamiento pendientes de hoy.</span></div><button className={"switch-button" + (reminders ? " is-on" : "")} role="switch" aria-checked={reminders} aria-label="Recordatorio al abrir" onClick={() => journal.changeReminders(!reminders)}><span /></button></div>
     <div className="settings-line"><span className="settings-icon">{permission === "granted" ? <Bell size={19} /> : <BellOff size={19} />}</span><div><b>Avisos del navegador</b><span>{permission === "denied" ? "Bloqueados en este navegador." : permission === "unsupported" ? "No disponibles en este navegador." : "Mientras la app esté abierta."}</span></div>{permission === "default" && <button className="text-button" onClick={async () => { if (await Notification.requestPermission() === "granted") { onClose(); onToast("Avisos activados"); } }}>Activar</button>}{permission === "granted" && <CheckCircle2 size={19} className="permission-ok" />}</div>
-    <p className="privacy-note"><ShieldCheck size={15} />El nombre es una etiqueta. Para cargar el mismo historial de Firebase, el identificador debe ser el mismo; escribir otra vez el nombre no recupera una sesión anónima.</p>
+    <p className="privacy-note"><ShieldCheck size={15} />El perfil se abre con el nombre. Cualquier persona que use exactamente ese nombre comparte este historial.</p>
   </Modal>;
 }
 
@@ -207,11 +220,11 @@ function ReportModal({ day, view, records, name, onClose }) {
 export default function App() {
   const journal = useJournal();
   const { records, plans, name, reminders, sync, cloudError } = journal;
-  const [section, setSection] = useState("records"), [day, setDay] = useState(today), [view, setView] = useState("month"), [modal, setModal] = useState(""), [selected, setSelected] = useState(null), [returnTo, setReturnTo] = useState(""), [toast, setToast] = useState("");
+  const [section, setSection] = useState("records"), [day, setDay] = useState(today), [view, setView] = useState("month"), [modal, setModal] = useState(journal.name ? "" : "name-entry"), [selected, setSelected] = useState(null), [returnTo, setReturnTo] = useState(""), [toast, setToast] = useState("");
   const [initialMedicine, setInitialMedicine] = useState(""), [nameReturnTo, setNameReturnTo] = useState(""), [dragDate, setDragDate] = useState(null);
   const [dropQuick, setDropQuick] = useState(false), [deleteReturnTo, setDeleteReturnTo] = useState("day");
-  const registrations = usePendingRegistrations((data) => { journal.saveRecord(data); setToast(medicineLabel(data.medicine) + " · Toma guardada"); }, (error) => setToast(error.message));
-  const startupShown = useRef(false);
+  const registrations = usePendingRegistrations((data, scope) => { journal.saveRecord(data, scope); setToast(medicineLabel(data.medicine) + " · Toma guardada"); }, (error) => setToast(error.message), journal.uid);
+  const startupShown = useRef(false), automaticNamePrompt = useRef(!journal.name), historyOpened = useRef(null);
   const frequent = useMemo(() => frequentMedicines(records), [records]);
   const suggestions = useMemo(() => {
     const names = new Map(); [...records, ...plans].forEach((item) => { if (isNamedMedicine(item.medicine)) names.set(norm(item.medicine), item.medicine); }); return [...names.values()].sort((a, b) => a.localeCompare(b, "es"));
@@ -222,6 +235,15 @@ export default function App() {
   const initials = name.trim().split(/\s+/).slice(0, 2).map((value) => value[0]?.toUpperCase()).join("") || "T";
   const permission = "Notification" in window ? Notification.permission : "unsupported";
   useEffect(() => { if (!toast) return; const timer = setTimeout(() => setToast(""), 4200); return () => clearTimeout(timer); }, [toast]);
+  useEffect(() => {
+    if (journal.profileId && automaticNamePrompt.current) { automaticNamePrompt.current = false; setModal((current) => current === "name-entry" ? "" : current); }
+  }, [journal.profileId]);
+  useEffect(() => {
+    if (!journal.profileId || journal.loadedCloudRecords === null || historyOpened.current === journal.profileId) return;
+    historyOpened.current = journal.profileId;
+    const latest = records.filter((item) => item.status === "taken").map((item) => item.date).sort().at(-1);
+    if (latest && day === today() && view === "month" && !records.some((item) => item.date.startsWith(today().slice(0, 7)))) setDay(latest);
+  }, [journal.profileId, journal.loadedCloudRecords, records, day, view]);
   useEffect(() => {
     if (!startupShown.current && plans.length) { startupShown.current = true; if (reminders && remainingToday.length) setModal((current) => current || "reminder"); }
   }, [plans.length, reminders, remainingToday.length]);
@@ -253,6 +275,13 @@ export default function App() {
     queueDrop({ medicine, date, status: "taken", takenAt: Date.now(), plannedTime: null });
   }
   function changeSection(next) { setSection(next); setModal(""); }
+  function changeName() { automaticNamePrompt.current = false; setModal("name-entry"); }
+  async function enterProfile(value) {
+    registrations.cancelAll();
+    const openedName = await journal.enterName(value);
+    startupShown.current = false; historyOpened.current = null; setSelected(null); setDragDate(null);
+    setDay(today()); setView("month"); setSection("records"); setModal(""); setToast("Historial de " + openedName);
+  }
   function shift(direction) { setDay((current) => view === "year" ? addMonths(current, direction * 12) : view === "week" ? addDays(current, direction * 7) : addMonths(current, direction)); }
   function saveLog(data) { journal.saveRecord(data); setDay(data.date); setSection("records"); setModal(""); setToast(medicineLabel(data.medicine) + " · Toma guardada"); }
   function takeDose(dose) { try { journal.takeDose(dose); setToast(dose.medicine + " · Toma guardada"); } catch (err) { setToast(err.message); } }
@@ -266,7 +295,8 @@ export default function App() {
     </aside>
     <main className="main-area"><header className="topbar"><div className="mobile-brand"><span className="brand-icon"><Activity size={19} /></span><b>pastillas<span className="brand-dot">.</span></b></div><button className="sync-indicator" onClick={() => setModal("profile")} aria-label="Ver sincronización y perfil" title={cloudError || "Tus registros se guardan también en este navegador."}>{sync === "connecting" || sync === "syncing" ? <LoaderCircle size={13} className="spinner" /> : <span className={"sync-dot" + (sync === "online" ? " is-online" : "")} />}<span>{sync === "online" ? "Sincronizado" : sync === "syncing" || sync === "connecting" ? "Conectando" : "En este dispositivo"}</span></button><button className="icon-button mobile-report" aria-label="Informe de seguimiento" onClick={() => setModal("report")}><FileText size={20} /></button><button className="avatar top-avatar" onClick={() => setModal("profile")} aria-label="Perfil y recordatorios">{initials}</button></header>
       <div className="calendar-content"><section className="page-heading"><div><p className="eyebrow">{isTreatment ? "TU RUTINA, ORGANIZADA" : "TU HISTORIAL PERSONAL"}</p><h1>{isTreatment ? "Tratamientos" : "Mis tomas"}<span className="heading-spark">✦</span></h1><p>{isTreatment ? "Medicación programada y seguimiento de tus recetas." : "Pastillas de uso ocasional y tus registros anteriores."}</p></div><div className="heading-actions">{isTreatment && <button className="secondary-button manage-button" onClick={() => setModal("plans")}><Settings2 size={17} /><span>Administrar</span></button>}<button className="primary-button desktop-action" onClick={() => isTreatment ? setModal("plan") : openQuick()}><Plus size={18} />{isTreatment ? "Programar" : "Registrar toma"}</button></div></section>
-        {cloudError && <div className="sync-problem" role="status"><div><b>Firebase no pudo cargar o sincronizar el historial</b><p>{cloudErrorMessage(cloudError)}</p></div><button className="text-button" onClick={() => setModal("profile")}>Revisar</button></div>}
+        {cloudError && <div className="sync-problem" role="status"><div><b>No se pudo cargar o sincronizar el historial</b><p>{cloudErrorMessage(cloudError)}</p></div><button className="text-button" onClick={() => setModal("profile")}>Revisar</button></div>}
+        {!cloudError && journal.profileId && journal.loadedCloudRecords === null && <p className="calendar-loading" role="status"><LoaderCircle size={16} className="spinner" />Cargando el historial de {name}…</p>}
         {!!journal.savedHistories.length && <div className="sync-problem"><div><b>Hay un historial anterior en este navegador</b><p>Puedes recuperar su copia desde tu perfil.</p></div><button className="text-button" onClick={() => setModal("profile")}>Ver copia</button></div>}
         {!isTreatment && <MedicineCatalog medicines={frequent} onPick={(medicine) => openQuick("", medicine)} onDrop={dropMedicine} onHoverDate={setDragDate} />}
         <CalendarPanel day={day} view={view} section={section} records={records} plans={plans} onDay={openDay} onEntry={openEntry} onToday={() => setDay(today())} onView={setView} onShift={shift} dragDate={dragDate} />
@@ -284,7 +314,8 @@ export default function App() {
     {modal === "plans" && <Modal title="Tus tratamientos" sub="ADMINISTRAR MEDICACIÓN" onClose={() => setModal("")}><div className="plan-list">{plans.length ? plans.map((plan) => <article className={"treatment-card" + (!plan.active ? " treatment-paused" : "")} key={plan.id}><Med name={plan.medicine} /><div className="treatment-copy"><b>{plan.medicine}</b><span>Cada {plan.interval} {plan.intervalUnit === "weeks" ? "semana(s)" : "día(s)"} · {plan.time}</span><small>{plan.active ? "Activo desde " + dateLabel(plan.startDate, true) : "Pausado"}</small></div><button className={"switch-button" + (plan.active ? " is-on" : "")} role="switch" aria-checked={plan.active} aria-label={(plan.active ? "Pausar " : "Activar ") + plan.medicine} onClick={() => journal.togglePlan(plan)}><span /></button></article>) : <div className="empty-state"><Repeat2 size={25} /><b>Aún no tienes tratamientos</b><p>Programa la medicación de tu receta para verla en su calendario.</p></div>}</div><button className="primary-button full-button" onClick={() => setModal("plan")}><Plus size={18} />Nuevo tratamiento</button></Modal>}
     {modal === "report" && <ReportModal day={day} view={view} records={records} name={name} onClose={() => setModal("")} />}
     {modal === "delete" && selected && <Modal title="¿Eliminar esta toma?" sub="CONFIRMAR CAMBIO" onClose={() => setModal(deleteReturnTo)}><div className="confirm-med"><Med name={selected.medicine} /><div><b>{medicineLabel(selected.medicine)}</b><span>{dateLabel(selected.date, true)} · {selected.takenAt ? timeLabel(selected.takenAt, true) : "Hora no registrada"}</span></div></div><p className="modal-copy">Se quitará esta toma de tu historial.</p><div className="modal-actions"><button className="secondary-button" onClick={() => setModal(deleteReturnTo)}>Conservar</button><button className="danger-button" onClick={deleteSelected}><Trash2 size={16} />Eliminar</button></div></Modal>}
-    {modal === "profile" && <ProfileModal journal={journal} initials={initials} permission={permission} onClose={() => setModal("")} onToast={setToast} onRecover={(history) => { if (history.latest) setDay(history.latest); setView("month"); setSection("records"); setModal(""); setToast("Copia local recuperada"); }} />}
+    {modal === "name-entry" && <NameEntryModal name={name} onClose={() => setModal("")} onEnter={enterProfile} />}
+    {modal === "profile" && <ProfileModal journal={journal} initials={initials} permission={permission} onClose={() => setModal("")} onToast={setToast} onChangeName={changeName} onRecover={(history) => { if (history.latest) setDay(history.latest); setView("month"); setSection("records"); setModal(""); setToast("Copia local recuperada"); }} />}
     {modal === "reminder" && <Modal title="Tus tomas de hoy" sub="RECORDATORIO PERSONAL" onClose={() => setModal("")}><div className="reminder-intro"><Bell size={21} /><p>{remainingToday.length} {remainingToday.length === 1 ? "toma programada pendiente" : "tomas programadas pendientes"} para hoy.</p></div><div className="day-modal-list">{remainingToday.map((dose) => <DoseRow key={dose.id} dose={dose} records={records} onTake={takeDose} onDelete={() => {}} />)}</div><div className="modal-actions"><button className="text-button" onClick={() => { journal.changeReminders(false); setModal(""); }}>Desactivar avisos</button><button className="primary-button" onClick={() => { setSection("treatments"); setDay(today()); setModal(""); }}>Ver tratamientos</button></div></Modal>}
   </div>;
 }

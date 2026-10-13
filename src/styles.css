@@ -249,6 +249,10 @@ button:active:not(:disabled) { transform: translateY(1px); }
 .cloud-detail p { margin: 7px 0; }
 .cloud-detail code { color: #beac7b; font-size: 10px; overflow-wrap: anywhere; }
 .profile-uid { color: #748c7b; font-size: 10px; overflow-wrap: anywhere; user-select: all; }
+.name-entry-mark { display: flex; align-items: center; gap: 14px; margin-bottom: 23px; }
+.name-entry-mark .medicine-mark { flex: 0 0 52px; width: 52px; height: 52px; }
+.name-entry-mark p { margin: 0; color: #82948a; font-size: 13px; line-height: 1.7; }
+.calendar-loading { display: flex; align-items: center; gap: 8px; margin: 0 0 17px; color: #58814f; font-size: 12px; }
 .profile-data-summary { display: flex; flex-wrap: wrap; gap: 7px 16px; margin-bottom: 13px; color: #82948a; font-size: 11px; }
 .profile-data-summary b { color: #467b60; }
 .sync-retry { margin-bottom: 16px; }

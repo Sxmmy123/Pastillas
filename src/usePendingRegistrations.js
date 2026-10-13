@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { makeId } from "./storage";
 
-export default function usePendingRegistrations(onCommit, onError) {
-  const jobs = useRef(new Map()), callbacks = useRef({ onCommit, onError });
+export default function usePendingRegistrations(onCommit, onError, scope) {
+  const jobs = useRef(new Map()), callbacks = useRef({ onCommit, onError }), activeScope = useRef(scope);
   callbacks.current = { onCommit, onError };
   const [pending, setPending] = useState([]);
 
@@ -13,12 +13,13 @@ export default function usePendingRegistrations(onCommit, onError) {
   }
 
   function queue(data) {
-    const id = makeId(), job = { id, data, deadline: Date.now() + 4000, timer: null };
+    const id = makeId(), job = { id, data, scope: activeScope.current, deadline: Date.now() + 4000, timer: null };
     jobs.current.set(id, job);
     job.timer = setTimeout(() => {
       if (!jobs.current.delete(id)) return;
       publish();
-      try { callbacks.current.onCommit(data); }
+      if (job.scope !== activeScope.current) return;
+      try { callbacks.current.onCommit(data, job.scope); }
       catch (error) { callbacks.current.onError(error); }
     }, 4000);
     publish();
@@ -31,6 +32,16 @@ export default function usePendingRegistrations(onCommit, onError) {
     return true;
   }
 
+  function cancelAll() {
+    jobs.current.forEach((job) => clearTimeout(job.timer));
+    jobs.current.clear(); publish();
+  }
+
+  useEffect(() => {
+    activeScope.current = scope;
+    cancelAll();
+  }, [scope]);
+
   useEffect(() => {
     if (!pending.length) return;
     const timer = setInterval(publish, 200);
@@ -41,5 +52,5 @@ export default function usePendingRegistrations(onCommit, onError) {
     jobs.current.clear();
   }, []);
 
-  return { pending, queue, cancel };
+  return { pending, queue, cancel, cancelAll };
 }

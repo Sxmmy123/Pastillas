@@ -7,6 +7,17 @@ export const recordsKey = (uid) => RECORDS + ":" + uid;
 export const plansKey = (uid) => "pastillas:plans:v1:" + uid;
 export const prefsKey = (uid) => "pastillas:settings:v1:" + uid;
 export const nameKey = (uid) => "pastillas:name:" + uid;
+export const profileUid = (id) => "profile-" + id;
+export function cleanProfileName(value) {
+  const name = String(value || "").trim().normalize("NFC");
+  if (!name || name.length > 40 || /[\u0000-\u001f\u007f]/.test(name)) throw new Error("Escribe un nombre de entre 1 y 40 caracteres.");
+  return name;
+}
+export async function profileKey(value) {
+  const name = cleanProfileName(value);
+  const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(name));
+  return [...new Uint8Array(bytes)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
 export const makeId = () => crypto.randomUUID?.() || Date.now().toString(36) + Math.random().toString(36).slice(2);
 
 export function readJson(key, fallback) {
@@ -20,13 +31,15 @@ export function writeJson(key, value) {
 export function readPlans(uid) { const items = readJson(plansKey(uid), []); return Array.isArray(items) ? items : []; }
 export function readReminders(uid) { const prefs = readJson(prefsKey(uid), {}); return prefs?.remindersEnabled !== false; }
 export function readDeleted(uid, previous = uid) {
-  const keys = [DELETED + ":" + uid, LEGACY_DELETED];
+  const keys = [DELETED + ":" + uid];
+  if (!uid.startsWith("profile-")) keys.push(LEGACY_DELETED);
   if (previous?.startsWith("local-") && previous !== uid) keys.push(DELETED + ":" + previous);
   if (!previous) keys.push(DELETED);
   return new Set(keys.flatMap((key) => { const value = readJson(key, []); return Array.isArray(value) ? value : []; }));
 }
 export function writeDeleted(ids, uid) {
   if (!writeJson(DELETED + ":" + uid, [...ids])) return false;
+  if (uid.startsWith("profile-")) return true;
   const stored = readJson(LEGACY_DELETED, []), legacy = new Set(Array.isArray(stored) ? stored : []);
   for (const id of ids) if (typeof id === "string" && id.startsWith("legacy-")) legacy.add(id);
   return !legacy.size || writeJson(LEGACY_DELETED, [...legacy]);
@@ -64,12 +77,12 @@ export function readRecords(uid, previous = uid) {
   if (previous?.startsWith("local-") && previous !== uid) keys.push(recordsKey(previous));
   if (!previous) keys.push(RECORDS);
   const cached = keys.flatMap((key) => { const items = readJson(key, []); return Array.isArray(items) ? items : []; });
-  return mergeRecords(readLegacyRecords(), cached, readDeleted(uid, previous));
+  return mergeRecords(uid.startsWith("profile-") ? [] : readLegacyRecords(), cached, readDeleted(uid, previous));
 }
 
 // A refreshed anonymous sign-in must not make an older local copy unreachable.
 // Offer these copies explicitly instead of silently uploading another profile.
-export function readSavedHistories(uid, currentRecords = [], currentPlans = []) {
+export function readSavedHistories(uid, currentRecords = [], currentPlans = [], includeEmpty = false) {
   const histories = [], known = new Map(currentRecords.map((item) => [item.id, item]));
   const knownPlans = new Map(currentPlans.map((item) => [item.id, item]));
   const removed = readDeleted(uid);
@@ -86,7 +99,8 @@ export function readSavedHistories(uid, currentRecords = [], currentPlans = []) 
       const plans = readPlans(owner);
       const extra = records.filter((item) => !removed.has(item.id) && (!known.has(item.id) || Number(item.updatedAt || 0) > Number(known.get(item.id).updatedAt || 0)));
       const extraPlans = plans.filter((item) => !knownPlans.has(item.id) || Number(item.updatedAt || 0) > Number(knownPlans.get(item.id).updatedAt || 0));
-      if (extra.length || extraPlans.length) histories.push({ uid: owner, name: localStorage.getItem(nameKey(owner)) || "Historial anterior", records, plans, count: extra.length, latest: records.map((item) => item.date).sort().at(-1) });
+      const explicitName = localStorage.getItem(nameKey(owner)) || "";
+      if (includeEmpty || extra.length || extraPlans.length) histories.push({ uid: owner, name: explicitName || "Historial anterior", explicitName, records, plans, count: extra.length, latest: records.map((item) => item.date).sort().at(-1) });
     }
   } catch {}
   return histories.sort((a, b) => (b.latest || "").localeCompare(a.latest || ""));
@@ -119,5 +133,6 @@ export function loadLocalSession() {
   try { localStorage.setItem(OWNER, uid); } catch {}
   let name = "";
   try { name = localStorage.getItem(nameKey(uid)) || ""; } catch {}
-  return { uid, records, deleted, plans: readPlans(uid), reminders: readReminders(uid), name };
+  const profileId = /^profile-[a-f0-9]{64}$/.test(uid) ? uid.slice(8) : null;
+  return { uid, profileId, records, deleted, plans: readPlans(uid), reminders: readReminders(uid), name };
 }

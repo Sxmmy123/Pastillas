@@ -6,11 +6,61 @@ service cloud.firestore {
       return request.auth != null && request.auth.uid == uid;
     }
 
-    match /usuarios/{uid} {
-      allow read, write: if owns(uid);
+    function hasNameSession() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/sesiones/$(request.auth.uid));
+    }
+
+    function nameSession() {
+      return get(/databases/$(database)/documents/sesiones/$(request.auth.uid)).data;
+    }
+
+    function usesProfile(profileId) {
+      return hasNameSession() && nameSession().profileId == profileId;
+    }
+
+    function sameLegacyName(uid) {
+      return hasNameSession()
+        && exists(/databases/$(database)/documents/usuarios/$(uid))
+        && get(/databases/$(database)/documents/usuarios/$(uid)).data.displayName
+          == nameSession().displayName;
+    }
+
+    match /sesiones/{uid} {
+      allow get: if owns(uid);
+      allow create, update: if owns(uid)
+        && request.resource.data.keys().hasOnly(['profileId', 'displayName', 'updatedAt'])
+        && request.resource.data.profileId is string
+        && request.resource.data.profileId.matches('^[a-f0-9]{64}$')
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() > 0
+        && request.resource.data.displayName.size() <= 40;
+    }
+
+    match /perfiles/{profileId} {
+      allow get: if usesProfile(profileId);
+      allow create, update: if usesProfile(profileId)
+        && request.resource.data.displayName == nameSession().displayName;
 
       match /registros/{recordId} {
-        allow read, write: if owns(uid);
+        allow read, write: if usesProfile(profileId);
+      }
+
+      match /eliminados/{recordId} {
+        allow read, write: if usesProfile(profileId);
+      }
+    }
+
+    match /usuarios/{uid} {
+      allow get: if owns(uid) || sameLegacyName(uid);
+      // The client must query displayName == the entered name.
+      allow list: if hasNameSession()
+        && resource.data.displayName == nameSession().displayName;
+      allow create, update, delete: if owns(uid);
+
+      match /registros/{recordId} {
+        allow read: if owns(uid) || sameLegacyName(uid);
+        allow write: if owns(uid);
       }
     }
   }

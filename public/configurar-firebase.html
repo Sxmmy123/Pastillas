@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#246c55"><title>Activar entrada por nombre · Pastillas</title><link rel="icon" href="./icon.svg">
+<style>*{box-sizing:border-box}body{margin:0;background:#f2f7f0;color:#304c3e;font:15px/1.65 system-ui,sans-serif}main{max-width:610px;margin:48px auto;padding:30px;background:white;border:1px solid #e2ecdf;border-radius:24px}header{display:flex;align-items:center;gap:12px;font-weight:750}header img{width:44px;height:44px;border-radius:12px}h1{margin:24px 0 10px;font-size:27px;line-height:1.3;letter-spacing:-.6px}p{color:#6f8477}ol{padding-left:23px}li{padding:5px 0}.actions{display:grid;gap:10px;margin:24px 0}button,.action{display:block;width:100%;padding:14px;border:0;border-radius:13px;background:#246c55;color:white;text-align:center;text-decoration:none;font:650 14px system-ui;cursor:pointer}.secondary{background:#eef5eb;color:#246c55}button:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid #94c9af;outline-offset:3px}#status{min-height:25px;font-size:13px;color:#246c55}details{margin:24px 0 18px}summary{cursor:pointer;color:#467b60;font-size:13px}pre{overflow:auto;max-height:360px;padding:18px;border-radius:12px;background:#f4f7f2;color:#334c3c;font:11px/1.6 ui-monospace,monospace}footer{border-top:1px solid #e2ecdf;margin-top:24px;padding-top:18px;font-size:12px;color:#7c8f81}footer a{color:#246c55}@media(max-width:640px){main{margin:16px 12px;padding:24px 20px;border-radius:20px}h1{font-size:24px}}</style></head>
+<body><main><header><img src="./icon-192.png" alt=""><span>pastillas.</span></header><h1>Activa el historial por nombre</h1><p>Para que <b>Sxmy</b> abra el mismo historial en tu celular y computadora, actualiza las reglas una vez.</p><ol><li>Pulsa <b>Copiar reglas completas</b>.</li><li>Abre Firebase y entra a <b>Firestore Database → Reglas</b>.</li><li>Reemplaza las reglas anteriores, pega las nuevas y pulsa <b>Publicar</b>.</li></ol><div class="actions"><button id="copy" type="button">Copiar reglas completas</button><a class="action secondary" href="https://console.firebase.google.com/project/regis-b73aa/firestore/rules" target="_blank" rel="noreferrer">Abrir Firebase</a></div><p id="status" role="status" aria-live="polite"></p><details><summary>Ver las reglas completas</summary><pre id="rules"><code>rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function owns(uid) {
+      return request.auth != null &amp;&amp; request.auth.uid == uid;
+    }
+
+    function hasNameSession() {
+      return request.auth != null
+        &amp;&amp; exists(/databases/$(database)/documents/sesiones/$(request.auth.uid));
+    }
+
+    function nameSession() {
+      return get(/databases/$(database)/documents/sesiones/$(request.auth.uid)).data;
+    }
+
+    function usesProfile(profileId) {
+      return hasNameSession() &amp;&amp; nameSession().profileId == profileId;
+    }
+
+    function sameLegacyName(uid) {
+      return hasNameSession()
+        &amp;&amp; exists(/databases/$(database)/documents/usuarios/$(uid))
+        &amp;&amp; get(/databases/$(database)/documents/usuarios/$(uid)).data.displayName
+          == nameSession().displayName;
+    }
+
+    match /sesiones/{uid} {
+      allow get: if owns(uid);
+      allow create, update: if owns(uid)
+        &amp;&amp; request.resource.data.keys().hasOnly(['profileId', 'displayName', 'updatedAt'])
+        &amp;&amp; request.resource.data.profileId is string
+        &amp;&amp; request.resource.data.profileId.matches('^[a-f0-9]{64}$')
+        &amp;&amp; request.resource.data.displayName is string
+        &amp;&amp; request.resource.data.displayName.size() &gt; 0
+        &amp;&amp; request.resource.data.displayName.size() &lt;= 40;
+    }
+
+    match /perfiles/{profileId} {
+      allow get: if usesProfile(profileId);
+      allow create, update: if usesProfile(profileId)
+        &amp;&amp; request.resource.data.displayName == nameSession().displayName;
+
+      match /registros/{recordId} {
+        allow read, write: if usesProfile(profileId);
+      }
+
+      match /eliminados/{recordId} {
+        allow read, write: if usesProfile(profileId);
+      }
+    }
+
+    match /usuarios/{uid} {
+      allow get: if owns(uid) || sameLegacyName(uid);
+      // The client must query displayName == the entered name.
+      allow list: if hasNameSession()
+        &amp;&amp; resource.data.displayName == nameSession().displayName;
+      allow create, update, delete: if owns(uid);
+
+      match /registros/{recordId} {
+        allow read: if owns(uid) || sameLegacyName(uid);
+        allow write: if owns(uid);
+      }
+    }
+  }
+}
+</code></pre></details><footer>Proyecto: regis-b73aa · Las reglas conservan el acceso a los registros antiguos.<br>Después de publicar, <a href="./">vuelve a Pastillas</a> y entra con <b>Sxmy</b>.</footer></main>
+<script>const rules="rules_version = '2';\n\nservice cloud.firestore {\n  match /databases/{database}/documents {\n    function owns(uid) {\n      return request.auth != null && request.auth.uid == uid;\n    }\n\n    function hasNameSession() {\n      return request.auth != null\n        && exists(/databases/$(database)/documents/sesiones/$(request.auth.uid));\n    }\n\n    function nameSession() {\n      return get(/databases/$(database)/documents/sesiones/$(request.auth.uid)).data;\n    }\n\n    function usesProfile(profileId) {\n      return hasNameSession() && nameSession().profileId == profileId;\n    }\n\n    function sameLegacyName(uid) {\n      return hasNameSession()\n        && exists(/databases/$(database)/documents/usuarios/$(uid))\n        && get(/databases/$(database)/documents/usuarios/$(uid)).data.displayName\n          == nameSession().displayName;\n    }\n\n    match /sesiones/{uid} {\n      allow get: if owns(uid);\n      allow create, update: if owns(uid)\n        && request.resource.data.keys().hasOnly(['profileId', 'displayName', 'updatedAt'])\n        && request.resource.data.profileId is string\n        && request.resource.data.profileId.matches('^[a-f0-9]{64}$')\n        && request.resource.data.displayName is string\n        && request.resource.data.displayName.size() > 0\n        && request.resource.data.displayName.size() \u003c= 40;\n    }\n\n    match /perfiles/{profileId} {\n      allow get: if usesProfile(profileId);\n      allow create, update: if usesProfile(profileId)\n        && request.resource.data.displayName == nameSession().displayName;\n\n      match /registros/{recordId} {\n        allow read, write: if usesProfile(profileId);\n      }\n\n      match /eliminados/{recordId} {\n        allow read, write: if usesProfile(profileId);\n      }\n    }\n\n    match /usuarios/{uid} {\n      allow get: if owns(uid) || sameLegacyName(uid);\n      // The client must query displayName == the entered name.\n      allow list: if hasNameSession()\n        && resource.data.displayName == nameSession().displayName;\n      allow create, update, delete: if owns(uid);\n\n      match /registros/{recordId} {\n        allow read: if owns(uid) || sameLegacyName(uid);\n        allow write: if owns(uid);\n      }\n    }\n  }\n}\n";document.getElementById('copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(rules);document.getElementById('status').textContent='Copiado. Pega el texto en las reglas de Firebase y pulsa Publicar.';}catch{const details=document.querySelector('details');details.open=true;const selection=window.getSelection();const range=document.createRange();range.selectNodeContents(document.getElementById('rules'));selection.removeAllRanges();selection.addRange(range);document.getElementById('status').textContent='Copia el texto seleccionado y pégalo en las reglas de Firebase.';}});</script></body></html>
