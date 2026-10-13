@@ -49,7 +49,15 @@ Al tocar una pastilla del calendario puedes completar su nombre o elegir **Elimi
 
 Cada tratamiento permite elegir fecha inicial, hora, repetición en días o semanas y duración en días, semanas, meses o sin fecha final. Los tratamientos pausados dejan de crear tomas futuras en el calendario. El aviso al abrir la app se puede desactivar desde el perfil. Los avisos del navegador requieren permiso y se programan mientras la app permanece abierta; el aviso al abrir sirve como recordatorio adicional.
 
-El informe se abre desde **Informe para el médico** en escritorio o el icono de documento en móvil. Es un modal independiente con periodo, selector de mes para la consulta mensual y filtro de tomas ocasionales, tratamientos o ambas. Una tabla resume las tomas por medicamento, los días con consumo y el porcentaje de registros del periodo; las tomas sin nombre se agrupan como sin especificar. Otra tabla conserva el detalle de fechas, horas y tipo de toma. La impresión incluye únicamente el informe y permite guardarlo como PDF desde el diálogo del dispositivo.
+## Estadísticas e informe para la consulta
+
+**Estadísticas e informe** en escritorio y **Seguimiento** en la navegación móvil abren una página de estadísticas. Primero muestra tomas registradas, días con tomas, pastillas seleccionadas y actividad del periodo. La tabla permite elegir las pastillas por nombre e icono y filtrar uso ocasional, tratamientos o ambos. Las pastillas sin nombre siguen disponibles como **Pastilla sin especificar**.
+
+El selector de fechas permite tocar el inicio, deslizar entre meses en el celular y tocar el final. Las fechas del intervalo se rellenan en secuencia y la fecha final tiene una breve animación de parada. También hay periodos rápidos (este mes, mes anterior, 30 días y todo), salto a un mes y entrada manual de fechas. Respeta la preferencia de movimiento reducido. Durante la selección del final no se puede preparar un informe incompleto.
+
+**Preparar informe** abre la vista previa con la selección elegida. El PDF se genera en el dispositivo con tipografía incluida, resumen visual, iconos, gráfico de actividad, tabla por pastilla y detalle de fechas, horas, tipo de registro y tiempo entre tomas de la misma pastilla. No inventa nombres ni horas: los datos ausentes se indican y no se calcula un intervalo exacto a través de una hora desconocida. Las cifras cuentan registros, no dosis ni cantidad de comprimidos.
+
+En navegadores que comparten archivos, **Compartir PDF** abre el selector del dispositivo; la descarga queda disponible. En los demás se ofrece **Descargar PDF**. El archivo se prepara antes de pulsar Compartir para conservar la activación necesaria del navegador. La aplicación no envía el informe a ningún destinatario por sí sola. La impresión conserva únicamente el informe. Las dependencias y las fuentes del PDF se incluyen en el caché de la PWA.
 
 ## GitHub Pages
 
