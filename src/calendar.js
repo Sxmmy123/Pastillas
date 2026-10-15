@@ -1,3 +1,5 @@
+import { isStockPlan, scheduledDoses } from "./treatments.js";
+
 export const dayKey = (date) => date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0") + "-" + String(date.getDate()).padStart(2, "0");
 export const today = () => dayKey(new Date());
 export const norm = (value) => String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim().replace(/\s+/g, " ");
@@ -19,6 +21,7 @@ export function daysBetween(first, second) {
   return Math.round((Date.UTC(b.getFullYear(), b.getMonth(), b.getDate()) - Date.UTC(a.getFullYear(), a.getMonth(), a.getDate())) / 86400000);
 }
 export function isDue(plan, date) {
+  if (isStockPlan(plan)) return scheduledDoses(plan, date).length > 0;
   if (!plan.active || date < plan.startDate || !plan.time) return false;
   const elapsed = daysBetween(plan.startDate, date), step = Number(plan.interval) * (plan.intervalUnit === "weeks" ? 7 : 1);
   if (elapsed < 0 || !step || elapsed % step) return false;
@@ -36,10 +39,11 @@ export function entriesFor(date, section, records, plans) {
   const saved = records.filter((item) => item.date === date && (section === "treatments" ? !!item.planId : !item.planId));
   if (section !== "treatments") return saved.sort((a, b) => (a.takenAt || 0) - (b.takenAt || 0));
   const covered = new Set(saved.map((item) => item.planId));
-  const due = plans.filter((plan) => isDue(plan, date) && !covered.has(plan.id)).map((plan) => ({
+  const due = plans.filter((plan) => !isStockPlan(plan) && isDue(plan, date) && !covered.has(plan.id)).map((plan) => ({
     id: "due-" + plan.id + "-" + date, planId: plan.id, medicine: plan.medicine, date, plannedTime: plan.time, status: "planned", takenAt: null, legacy: false, isVirtual: true,
   }));
-  return [...saved, ...due].sort((a, b) => (a.plannedTime || "99:99").localeCompare(b.plannedTime || "99:99"));
+  const stockDue = plans.flatMap((plan) => scheduledDoses(plan, date)).filter((dose) => !saved.some((item) => item.doseKey === dose.doseKey));
+  return [...saved, ...due, ...stockDue].sort((a, b) => (a.plannedTime || "99:99").localeCompare(b.plannedTime || "99:99"));
 }
 export function frequentMedicines(records) {
   const map = new Map();

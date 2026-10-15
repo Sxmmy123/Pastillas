@@ -8,8 +8,9 @@ import MedicineCatalog from "./MedicineCatalog";
 import Med from "./MedicineMark";
 import { medicineMark as mark } from "./medicineVisual";
 import ReportsPage from "./ReportsPage";
-import { makeId } from "./storage";
-import { addDays, addMonths, atTime, dateLabel, durationLabel, entriesFor, frequentMedicines, isDue, isNamedMedicine, medicineLabel, monthTitle, norm, rangeFor, timeLabel, today } from "./calendar";
+import { PlanModal, RefillModal, TreatmentManager, TreatmentStockStrip, TreatmentTakeModal } from "./TreatmentModals";
+import { isStockPlan, shouldOfferRefill, stockState } from "./treatments";
+import { addDays, addMonths, atTime, dateLabel, durationLabel, entriesFor, frequentMedicines, isNamedMedicine, medicineLabel, monthTitle, norm, rangeFor, timeLabel, today } from "./calendar";
 
 function Modal({ title, sub, onClose, children, wide = false, report = false }) {
   const card = useRef(null), close = useRef(onClose); close.current = onClose;
@@ -117,33 +118,9 @@ function NameMedicineModal({ record, suggestions, onClose, onSave, onDelete }) {
     <button className="text-button delete-record-link" onClick={() => onDelete(record)}><Trash2 size={15} />Eliminar esta toma</button>
   </Modal>;
 }
-function PlanModal({ date, suggestions, onClose, onSave }) {
-  const [medicine, setMedicine] = useState(""), [startDate, setStartDate] = useState(date), [time, setTime] = useState("09:00");
-  const [interval, setInterval] = useState("1"), [intervalUnit, setIntervalUnit] = useState("days"), [duration, setDuration] = useState("1"), [durationUnit, setDurationUnit] = useState("weeks"), [indefinite, setIndefinite] = useState(false), [error, setError] = useState("");
-  function submit(event) {
-    event.preventDefault(); const repeat = Number(interval), length = Number(duration);
-    if (!medicine.trim()) { setError("Escribe el nombre del medicamento."); return; }
-    if (!Number.isInteger(repeat) || repeat < 1 || repeat > 365 || (!indefinite && (!Number.isInteger(length) || length < 1 || length > 365))) { setError("El intervalo y la duración deben ser números enteros entre 1 y 365."); return; }
-    try { onSave({ id: makeId(), medicine: medicine.trim(), startDate, time, interval: repeat, intervalUnit, duration: indefinite ? 0 : length, durationUnit, active: true, createdAt: Date.now(), updatedAt: Date.now() }); }
-    catch (err) { setError(err.message); }
-  }
-  return <Modal title="Nuevo tratamiento" sub="MEDICACIÓN PROGRAMADA" onClose={onClose}>
-    <form className="form-stack" onSubmit={submit}>
-      <label className="field-label">Nombre del medicamento<input autoFocus list="plan-medicines" value={medicine} onChange={(event) => setMedicine(event.target.value)} placeholder="Ej. Cortypiren" maxLength={70} required /></label>
-      <datalist id="plan-medicines">{suggestions.map((name) => <option key={name} value={name} />)}</datalist>
-      <div className="form-two-columns"><label className="field-label">Empieza el<input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} required /></label><label className="field-label">Hora prevista<input type="time" value={time} onChange={(event) => setTime(event.target.value)} required /></label></div>
-      <div className="schedule-builder"><Repeat2 size={17} /><span>Cada</span><input aria-label="Intervalo" type="number" min="1" max="365" value={interval} onChange={(event) => setInterval(event.target.value)} /><select aria-label="Unidad del intervalo" value={intervalUnit} onChange={(event) => setIntervalUnit(event.target.value)}><option value="days">días</option><option value="weeks">semanas</option></select></div>
-      <label className="field-label">Duración<select value={indefinite ? "forever" : "limited"} onChange={(event) => setIndefinite(event.target.value === "forever")}><option value="limited">Por un tiempo definido</option><option value="forever">Sin fecha de finalización</option></select></label>
-      {!indefinite && <div className="schedule-builder"><span>Durante</span><input aria-label="Duración" type="number" min="1" max="365" value={duration} onChange={(event) => setDuration(event.target.value)} /><select aria-label="Unidad de duración" value={durationUnit} onChange={(event) => setDurationUnit(event.target.value)}><option value="days">días</option><option value="weeks">semanas</option><option value="months">meses</option></select></div>}
-      <p className="hint">Aparecerá en el calendario de tratamientos en cada fecha prevista.</p>
-      {error && <p className="form-error" role="alert">{error}</p>}
-      <button className="primary-button full-button"><CalendarDays size={18} />Guardar tratamiento</button>
-    </form>
-  </Modal>;
-}
 function CalendarEntry({ dose, detailed = false, iconOnly = false, onOpen }) {
   const label = medicineLabel(dose.medicine);
-  return <button type="button" className={"calendar-pill " + mark(dose.medicine).tone + (iconOnly ? " pill-icon-only" : "") + (dose.status !== "taken" ? " pill-planned" : "")} title={label + " · " + (dose.status === "taken" ? "Tomada" : "Programada")} aria-label={label + (dose.isVirtual ? ", ver toma programada" : ", especificar o corregir nombre")} onClick={(event) => { event.stopPropagation(); onOpen(dose); }}><Med name={dose.medicine} small />{!iconOnly && <span className="pill-copy"><b>{isNamedMedicine(dose.medicine) ? label : "Sin especificar"}</b>{detailed && <small>{dose.status === "taken" ? (dose.takenAt ? timeLabel(dose.takenAt) + " · Tomada" : "Tomada · Sin hora") : dose.plannedTime + " · Programada"}</small>}</span>}{!iconOnly && dose.status === "taken" && <Check size={12} className="pill-check" />}</button>;
+  return <button type="button" className={"calendar-pill " + mark(dose.medicine).tone + (iconOnly ? " pill-icon-only" : "") + (dose.status !== "taken" ? " pill-planned" : "") + (dose.purchasePending ? " pill-awaiting-purchase" : "")} title={label + " · " + (dose.status === "taken" ? "Tomada" : dose.purchasePending ? "Por comprar" : "Programada")} aria-label={label + (dose.purchasePending ? ", compra pendiente" : dose.isVirtual ? ", ver toma programada" : ", especificar o corregir nombre")} onClick={(event) => { event.stopPropagation(); onOpen(dose); }}><Med name={dose.medicine} small />{!iconOnly && <span className="pill-copy"><b>{isNamedMedicine(dose.medicine) ? label : "Sin especificar"}</b>{detailed && <small>{dose.status === "taken" ? (dose.takenAt ? timeLabel(dose.takenAt) + " · Tomada" : "Tomada · Sin hora") : dose.plannedTime + (dose.purchasePending ? " · Por comprar" : " · Programada")}</small>}</span>}{!iconOnly && dose.status === "taken" && <Check size={12} className="pill-check" />}</button>;
 }
 function MonthGrid({ year, month, selected, getEntries, onSelect, onEntry, dragDate, compact = false }) {
   const offset = (new Date(year, month, 1).getDay() + 6) % 7, total = new Date(year, month + 1, 0).getDate();
@@ -185,11 +162,11 @@ function CalendarPanel({ day, view, section, records, plans, onDay, onEntry, onT
 }
 function DoseRow({ dose, records, onTake, onDelete, onName }) {
   const previous = isNamedMedicine(dose.medicine) && dose.takenAt && records.filter((item) => item.id !== dose.id && item.takenAt && item.takenAt < dose.takenAt && norm(item.medicine) === norm(dose.medicine)).sort((a, b) => b.takenAt - a.takenAt)[0];
-  const delta = dose.plannedTime && dose.takenAt ? dose.takenAt - atTime(dose.date, dose.plannedTime) : null;
+  const delta = dose.plannedTime && dose.takenAt ? dose.takenAt - (dose.plannedAt || atTime(dose.date, dose.plannedTime)) : null;
   return <article className="dose-row"><Med name={dose.medicine} /><div className="dose-copy">{!dose.isVirtual && onName ? <button className="dose-name-button" onClick={() => onName(dose)}><span>{medicineLabel(dose.medicine)}</span><Pencil size={13} /></button> : <h3>{medicineLabel(dose.medicine)}</h3>}<span className={"dose-status " + (dose.status === "taken" ? "taken" : "")}>
-    {dose.status === "taken" ? <><CheckCircle2 size={13} />Tomada{dose.takenAt ? " · " + timeLabel(dose.takenAt, true) : " · Hora no registrada"}</> : <><Clock3 size={13} />Programada · {dose.plannedTime}</>}
-  </span>{dose.legacy && <small>Registro del calendario anterior</small>}{delta !== null && <small>Prevista {dose.plannedTime} · {delta === 0 ? "A tiempo" : durationLabel(delta) + (delta < 0 ? " antes" : " después")}</small>}{previous && <small>{durationLabel(dose.takenAt - previous.takenAt)} desde la toma anterior</small>}</div>
-    <div className="dose-actions">{dose.status !== "taken" ? <button className="take-button" disabled={dose.date > today()} onClick={() => onTake(dose)}><Check size={16} /><span>Tomada</span></button> : <button className="icon-button delete-button" onClick={() => onDelete(dose)} aria-label={"Eliminar registro de " + medicineLabel(dose.medicine)}><Trash2 size={16} /></button>}</div>
+    {dose.status === "taken" ? <><CheckCircle2 size={13} />Tomada{dose.takenAt ? " · " + timeLabel(dose.takenAt, true) : " · Hora no registrada"}</> : <><Clock3 size={13} />{dose.purchasePending ? "Por comprar" : "Programada"} · {dose.plannedTime}</>}
+  </span>{dose.pillQuantity > 0 && <small>{dose.pillQuantity} {dose.pillQuantity === 1 ? "pastilla en esta toma" : "pastillas en esta toma"}</small>}{dose.legacy && <small>Registro del calendario anterior</small>}{delta !== null && <small>Prevista {dose.plannedTime} · {delta === 0 ? "A tiempo" : durationLabel(delta) + (delta < 0 ? " antes" : " después")}</small>}{previous && <small>{durationLabel(dose.takenAt - previous.takenAt)} desde la toma anterior</small>}</div>
+    <div className="dose-actions">{dose.status !== "taken" ? <button className="take-button" disabled={dose.date > today() && !dose.purchasePending} onClick={() => onTake(dose)}><Check size={16} /><span>{dose.purchasePending ? "Confirmar compra" : "Tomada"}</span></button> : <button className="icon-button delete-button" onClick={() => onDelete(dose)} aria-label={"Eliminar registro de " + medicineLabel(dose.medicine)}><Trash2 size={16} /></button>}</div>
   </article>;
 }
 export default function App() {
@@ -198,18 +175,22 @@ export default function App() {
   const [section, setSection] = useState("records"), [day, setDay] = useState(today), [view, setView] = useState("month"), [modal, setModal] = useState(journal.name ? "" : "name-entry"), [selected, setSelected] = useState(null), [returnTo, setReturnTo] = useState(""), [toast, setToast] = useState("");
   const [initialMedicine, setInitialMedicine] = useState(""), [nameReturnTo, setNameReturnTo] = useState(""), [dragDate, setDragDate] = useState(null);
   const [dropQuick, setDropQuick] = useState(false), [deleteReturnTo, setDeleteReturnTo] = useState("day");
+  const [converting, setConverting] = useState(null), [refillId, setRefillId] = useState(null), [refillReturnTo, setRefillReturnTo] = useState(""), [takeReturnTo, setTakeReturnTo] = useState("day"), [currentDate, setCurrentDate] = useState(today);
+  const refillSeen = useRef(new Set());
   const registrations = usePendingRegistrations((data, scope) => { journal.saveRecord(data, scope); setToast(medicineLabel(data.medicine) + " · Toma guardada"); }, (error) => setToast(error.message), journal.uid);
   const startupShown = useRef(false), automaticNamePrompt = useRef(!journal.name), historyOpened = useRef(null);
   const frequent = useMemo(() => frequentMedicines(records), [records]);
   const suggestions = useMemo(() => {
     const names = new Map(); [...records, ...plans].forEach((item) => { if (isNamedMedicine(item.medicine)) names.set(norm(item.medicine), item.medicine); }); return [...names.values()].sort((a, b) => a.localeCompare(b, "es"));
   }, [records, plans]);
-  const doses = entriesFor(day, section, records, plans), activePlans = plans.filter((plan) => plan.active);
-  const remainingToday = entriesFor(today(), "treatments", records, plans).filter((dose) => dose.status !== "taken");
+  const doses = entriesFor(day, section, records, plans), activePlans = plans.filter((plan) => plan.active && (!isStockPlan(plan) || stockState(plan, records).dosesLeft > 0));
+  const remainingToday = entriesFor(currentDate, "treatments", records, plans).filter((dose) => dose.status !== "taken" && !dose.purchasePending);
+  const selectedRefill = plans.find((plan) => plan.id === refillId);
   const legacy = records.filter((item) => item.legacy), latestLegacy = legacy.map((item) => item.date).sort().at(-1);
   const initials = name.trim().split(/\s+/).slice(0, 2).map((value) => value[0]?.toUpperCase()).join("") || "T";
   const permission = "Notification" in window ? Notification.permission : "unsupported";
   useEffect(() => { if (!toast) return; const timer = setTimeout(() => setToast(""), 4200); return () => clearTimeout(timer); }, [toast]);
+  useEffect(() => { const refresh = () => setCurrentDate(today()); const timer = setInterval(refresh, 30000); document.addEventListener("visibilitychange", refresh); return () => { clearInterval(timer); document.removeEventListener("visibilitychange", refresh); }; }, []);
   useEffect(() => {
     if (journal.profileId && automaticNamePrompt.current) { automaticNamePrompt.current = false; setModal((current) => current === "name-entry" ? "" : current); }
   }, [journal.profileId]);
@@ -223,16 +204,23 @@ export default function App() {
     if (!startupShown.current && plans.length) { startupShown.current = true; if (reminders && remainingToday.length) setModal((current) => current || "reminder"); }
   }, [plans.length, reminders, remainingToday.length]);
   useEffect(() => {
+    if (modal || !journal.name || section === "reports") return;
+    const next = plans.find((plan) => shouldOfferRefill(plan, records) && !refillSeen.current.has(journal.uid + ":" + plan.id + ":" + stockState(plan).cycle));
+    if (!next) return;
+    refillSeen.current.add(journal.uid + ":" + next.id + ":" + stockState(next).cycle);
+    setRefillId(next.id); setRefillReturnTo(""); setModal("refill");
+  }, [modal, plans, records, journal.uid, journal.name, section]);
+  useEffect(() => {
     if (!reminders || !("Notification" in window) || Notification.permission !== "granted") return;
     const timers = [];
-    plans.filter((plan) => isDue(plan, today())).forEach((plan) => {
-      const taken = records.some((item) => item.planId === plan.id && item.date === today() && item.status === "taken"), due = atTime(today(), plan.time);
-      if (!taken && due > Date.now()) timers.push(setTimeout(async () => {
-        try { const registration = await navigator.serviceWorker?.getRegistration(); if (registration?.showNotification) await registration.showNotification("Hora de tu medicamento", { body: plan.medicine + " · " + plan.time, icon: "./icon-192.png", tag: plan.id + "-" + today() }); else new Notification("Hora de tu medicamento", { body: plan.medicine + " · " + plan.time, icon: "./icon-192.png" }); } catch {}
+    [currentDate, addDays(currentDate, 1)].flatMap((date) => entriesFor(date, "treatments", records, plans)).filter((dose) => dose.status !== "taken" && !dose.purchasePending).forEach((dose) => {
+      const due = dose.plannedAt || atTime(dose.date, dose.plannedTime);
+      if (due > Date.now()) timers.push(setTimeout(async () => {
+        try { const registration = await navigator.serviceWorker?.getRegistration(); if (registration?.showNotification) await registration.showNotification("Hora de tu medicamento", { body: dose.medicine + " · " + dose.plannedTime, icon: "./icon-192.png", tag: dose.doseKey || dose.id }); else new Notification("Hora de tu medicamento", { body: dose.medicine + " · " + dose.plannedTime, icon: "./icon-192.png" }); } catch {}
       }, due - Date.now()));
     });
     return () => timers.forEach(clearTimeout);
-  }, [plans, records, reminders, permission]);
+  }, [plans, records, reminders, permission, currentDate, journal.uid]);
   function openDay(date) { setDay(date); setModal("day"); }
   function openQuick(from = "", medicine = "", date = day, fromDrop = false) { setDay(date > today() ? today() : date); setInitialMedicine(medicine); setDropQuick(fromDrop); setReturnTo(from); setModal("quick-log"); }
   function openEntry(dose, from = "") { setDay(dose.date); if (dose.isVirtual) { setModal("day"); return; } setSelected(dose); setNameReturnTo(from); setModal("name-medicine"); }
@@ -259,8 +247,12 @@ export default function App() {
   }
   function shift(direction) { setDay((current) => view === "year" ? addMonths(current, direction * 12) : view === "week" ? addDays(current, direction * 7) : addMonths(current, direction)); }
   function saveLog(data) { journal.saveRecord(data); setDay(data.date); setSection("records"); setModal(""); setToast(medicineLabel(data.medicine) + " · Toma guardada"); }
-  function takeDose(dose) { try { journal.takeDose(dose); setToast(dose.medicine + " · Toma guardada"); } catch (err) { setToast(err.message); } }
-  function savePlan(plan) { journal.savePlan(plan); setDay(plan.startDate); setSection("treatments"); setModal(""); setToast("Tratamiento programado"); }
+  function takeDose(dose, recordedAt) { if (dose.purchasePending) { const plan = plans.find((item) => item.id === dose.planId); if (plan) openRefill(plan, modal); return; } if (dose.date < today() && !recordedAt) { setSelected(dose); setTakeReturnTo(modal); setModal("treatment-take"); return; } try { journal.takeDose(dose, recordedAt); if (modal === "treatment-take") setModal(takeReturnTo); setToast(dose.medicine + " · Toma guardada"); } catch (err) { if (modal === "treatment-take") throw err; setToast(err.message); } }
+  function openPlan(previous = null) { setConverting(previous); setModal("plan"); }
+  function savePlan(plan, previousPlanId) { journal.savePlan(plan, previousPlanId); setConverting(null); setDay(plan.startDate); setSection("treatments"); setModal(""); setToast("Tratamiento programado por cantidad"); }
+  function openRefill(plan, from = "") { refillSeen.current.add(journal.uid + ":" + plan.id + ":" + stockState(plan).cycle); setRefillId(plan.id); setRefillReturnTo(from); setModal("refill"); }
+  function saveRefill(id, quantity, purchased) { const plan = journal.refillPlan(id, quantity, purchased); const stock = stockState(plan, records); if (stock.remaining <= 2) refillSeen.current.add(journal.uid + ":" + plan.id + ":" + stock.cycle); setModal(refillReturnTo); setToast(purchased ? "Pastillas añadidas · Calendario alargado" : "Compra prevista · Calendario alargado"); }
+  function declineRefill(id) { journal.declineRefill(id); setModal(refillReturnTo); setToast("El tratamiento terminará con las pastillas disponibles"); }
   const isTreatment = section === "treatments", isReport = section === "reports";
   return <div className="app-shell">
     <aside className="desktop-sidebar"><a className="brand" href="./"><span className="brand-icon"><Activity size={22} /></span><span>pastillas<span className="brand-dot">.</span><small>MI REGISTRO PERSONAL</small></span></a><div className="side-label">MIS CALENDARIOS</div>
@@ -269,26 +261,29 @@ export default function App() {
       <div className="sidebar-bottom"><div className="sidebar-note"><ShieldCheck size={20} /><p>Un día a la vez.<br /><span>Tu historial siempre a mano.</span></p></div><button className="profile-button" onClick={() => setModal("profile")}><span className="avatar">{initials}</span><span className="profile-copy"><b>{name || "Tu perfil"}</b><small>Perfil y recordatorios</small></span><Settings2 size={17} /></button></div>
     </aside>
     <main className="main-area"><header className="topbar"><div className="mobile-brand"><span className="brand-icon"><Activity size={19} /></span><b>pastillas<span className="brand-dot">.</span></b></div><button className="sync-indicator" onClick={() => setModal("profile")} aria-label="Ver sincronización y perfil" title={cloudError || "Tus registros se guardan también en este navegador."}>{sync === "connecting" || sync === "syncing" ? <LoaderCircle size={13} className="spinner" /> : <span className={"sync-dot" + (sync === "online" ? " is-online" : "")} />}<span>{sync === "online" ? "Sincronizado" : sync === "syncing" || sync === "connecting" ? "Conectando" : "En este dispositivo"}</span></button><button className="avatar top-avatar" onClick={() => setModal("profile")} aria-label="Perfil y recordatorios">{initials}</button></header>
-      <div className="calendar-content">{!isReport && <section className="page-heading"><div><p className="eyebrow">{isTreatment ? "TU RUTINA, ORGANIZADA" : "TU HISTORIAL PERSONAL"}</p><h1>{isTreatment ? "Tratamientos" : "Mis tomas"}<span className="heading-spark">✦</span></h1><p>{isTreatment ? "Medicación programada y seguimiento de tus recetas." : "Pastillas de uso ocasional y tus registros anteriores."}</p></div><div className="heading-actions">{isTreatment && <button className="secondary-button manage-button" onClick={() => setModal("plans")}><Settings2 size={17} /><span>Administrar</span></button>}<button className="primary-button desktop-action" onClick={() => isTreatment ? setModal("plan") : openQuick()}><Plus size={18} />{isTreatment ? "Programar" : "Registrar toma"}</button></div></section>}
+      <div className="calendar-content">{!isReport && <section className="page-heading"><div><p className="eyebrow">{isTreatment ? "TU RUTINA, ORGANIZADA" : "TU HISTORIAL PERSONAL"}</p><h1>{isTreatment ? "Tratamientos" : "Mis tomas"}<span className="heading-spark">✦</span></h1><p>{isTreatment ? "Tus pastillas disponibles y las horas de cada toma." : "Pastillas de uso ocasional y tus registros anteriores."}</p></div><div className="heading-actions">{isTreatment && <button className="secondary-button manage-button" onClick={() => setModal("plans")}><Settings2 size={17} /><span>Administrar</span></button>}<button className="primary-button desktop-action" onClick={() => isTreatment ? openPlan() : openQuick()}><Plus size={18} />{isTreatment ? "Programar" : "Registrar toma"}</button></div></section>}
         {cloudError && <div className="sync-problem" role="status"><div><b>No se pudo cargar o sincronizar el historial</b><p>{cloudErrorMessage(cloudError)}</p></div><button className="text-button" onClick={() => setModal("profile")}>Revisar</button></div>}
         {!cloudError && journal.profileId && journal.loadedCloudRecords === null && <p className="calendar-loading" role="status"><LoaderCircle size={16} className="spinner" />Cargando el historial de {name}…</p>}
         {!!journal.savedHistories.length && <div className="sync-problem"><div><b>Hay un historial anterior en este navegador</b><p>Puedes recuperar su copia desde tu perfil.</p></div><button className="text-button" onClick={() => setModal("profile")}>Ver copia</button></div>}
         {isReport ? <ReportsPage key={journal.uid} records={records} name={name} day={day} Modal={Modal} /> : <>
         {!isTreatment && <MedicineCatalog medicines={frequent} onPick={(medicine) => openQuick("", medicine)} onDrop={dropMedicine} onHoverDate={setDragDate} />}
+        {isTreatment && <TreatmentStockStrip plans={plans} records={records} onManage={() => setModal("plans")} onRefill={(plan) => openRefill(plan)} />}
         <CalendarPanel day={day} view={view} section={section} records={records} plans={plans} onDay={openDay} onEntry={openEntry} onToday={() => setDay(today())} onView={setView} onShift={shift} dragDate={dragDate} />
         {!isTreatment && legacy.length > 0 && <button className="history-link" onClick={() => { setDay(latestLegacy); setView("month"); }}><Clock3 size={15} /><span>{legacy.length} {legacy.length === 1 ? "registro anterior conservado" : "registros anteriores conservados"}</span><span>Ver último mes<ChevronRight size={14} /></span></button>}
         {isTreatment && plans.length === 0 && <p className="calendar-guidance">Pulsa + para crear tu primer tratamiento. Sus tomas aparecerán aquí en las fechas programadas.</p>}
         </>}
       </div>
     </main>
-    <nav className="mobile-nav" aria-label="Secciones principales"><button className={"mobile-nav-link" + (section === "records" ? " active" : "")} aria-current={section === "records" ? "page" : undefined} onClick={() => changeSection("records")}><CalendarDays size={21} /><span>Mis tomas</span></button>{!isReport && <button className="mobile-add" onClick={() => isTreatment ? setModal("plan") : openQuick()} aria-label={isTreatment ? "Programar tratamiento" : "Registrar toma"}><Plus size={25} /></button>}<button className={"mobile-nav-link" + (isTreatment ? " active" : "")} aria-current={isTreatment ? "page" : undefined} onClick={() => changeSection("treatments")}><Repeat2 size={21} /><span>Tratamientos</span></button><button className={"mobile-nav-link" + (isReport ? " active" : "")} aria-current={isReport ? "page" : undefined} onClick={() => changeSection("reports")}><BarChart3 size={21} /><span>Seguimiento</span></button></nav>
+    <nav className="mobile-nav" aria-label="Secciones principales"><button className={"mobile-nav-link" + (section === "records" ? " active" : "")} aria-current={section === "records" ? "page" : undefined} onClick={() => changeSection("records")}><CalendarDays size={21} /><span>Mis tomas</span></button>{!isReport && <button className="mobile-add" onClick={() => isTreatment ? openPlan() : openQuick()} aria-label={isTreatment ? "Programar tratamiento" : "Registrar toma"}><Plus size={25} /></button>}<button className={"mobile-nav-link" + (isTreatment ? " active" : "")} aria-current={isTreatment ? "page" : undefined} onClick={() => changeSection("treatments")}><Repeat2 size={21} /><span>Tratamientos</span></button><button className={"mobile-nav-link" + (isReport ? " active" : "")} aria-current={isReport ? "page" : undefined} onClick={() => changeSection("reports")}><BarChart3 size={21} /><span>Seguimiento</span></button></nav>
     {toast && <div className={"toast" + (registrations.pending.length ? " toast-top" : "")} role="status"><CheckCircle2 size={18} /><span>{toast}</span><button onClick={() => setToast("")} aria-label="Cerrar aviso"><X size={16} /></button></div>}
     {!!registrations.pending.length && <section className="pending-registrations" aria-label="Registros pendientes">{registrations.pending.map((item) => <div className="pending-registration" key={item.id}><Med name={item.data.medicine} small /><div className="pending-registration-copy" role="status"><b>{medicineLabel(item.data.medicine)}</b><span>{dateLabel(item.data.date, true)} · {timeLabel(item.data.takenAt, true)}</span><small>Registro pendiente</small></div><button onClick={() => { if (registrations.cancel(item.id)) setToast("Registro anulado"); }} aria-label={"Anular registro de " + medicineLabel(item.data.medicine)}><X size={14} />Anular<span className="pending-count" aria-hidden="true">{item.seconds}</span></button></div>)}</section>}
-    {modal === "day" && <Modal title={dateLabel(day)} sub={isTreatment ? "TRATAMIENTOS DEL DÍA" : "TOMAS DEL DÍA"} onClose={() => setModal("")}><div className="day-modal-list">{doses.length ? doses.map((dose) => <DoseRow key={dose.id} dose={dose} records={records} onTake={takeDose} onName={(dose) => openEntry(dose, "day")} onDelete={(item) => openDelete(item)} />) : <div className="empty-state"><CalendarDays size={27} /><b>{isTreatment ? "Sin tomas programadas" : "No hay tomas en esta fecha"}</b><p>{isTreatment ? "Los tratamientos aparecerán según su repetición." : day > today() ? "Aquí verás las pastillas que registres ese día." : "Si olvidaste registrar una pastilla, puedes añadirla aquí."}</p></div>}</div><button className="primary-button full-button" disabled={!isTreatment && day > today()} onClick={() => isTreatment ? setModal("plan") : openQuick("day")}><Plus size={18} />{isTreatment ? "Programar tratamiento" : "Registrar una toma en este día"}</button></Modal>}
+    {modal === "day" && <Modal title={dateLabel(day)} sub={isTreatment ? "TRATAMIENTOS DEL DÍA" : "TOMAS DEL DÍA"} onClose={() => setModal("")}><div className="day-modal-list">{doses.length ? doses.map((dose) => <DoseRow key={dose.id} dose={dose} records={records} onTake={takeDose} onName={(dose) => openEntry(dose, "day")} onDelete={(item) => openDelete(item)} />) : <div className="empty-state"><CalendarDays size={27} /><b>{isTreatment ? "Sin tomas programadas" : "No hay tomas en esta fecha"}</b><p>{isTreatment ? "Los tratamientos aparecerán según su repetición." : day > today() ? "Aquí verás las pastillas que registres ese día." : "Si olvidaste registrar una pastilla, puedes añadirla aquí."}</p></div>}</div><button className="primary-button full-button" disabled={!isTreatment && day > today()} onClick={() => isTreatment ? openPlan() : openQuick("day")}><Plus size={18} />{isTreatment ? "Programar tratamiento" : "Registrar una toma en este día"}</button></Modal>}
     {modal === "quick-log" && <QuickLogModal date={day} frequent={frequent} suggestions={suggestions} initialMedicine={initialMedicine} delayed={dropQuick} onClose={() => setModal(returnTo)} onSave={dropQuick ? queueDrop : saveLog} />}
     {modal === "name-medicine" && selected && <NameMedicineModal record={selected} suggestions={suggestions} onClose={() => setModal(nameReturnTo)} onSave={renameMedicine} onDelete={(record) => openDelete(record, "name-medicine")} />}
-    {modal === "plan" && <PlanModal date={day} suggestions={suggestions} onClose={() => setModal("")} onSave={savePlan} />}
-    {modal === "plans" && <Modal title="Tus tratamientos" sub="ADMINISTRAR MEDICACIÓN" onClose={() => setModal("")}><div className="plan-list">{plans.length ? plans.map((plan) => <article className={"treatment-card" + (!plan.active ? " treatment-paused" : "")} key={plan.id}><Med name={plan.medicine} /><div className="treatment-copy"><b>{plan.medicine}</b><span>Cada {plan.interval} {plan.intervalUnit === "weeks" ? "semana(s)" : "día(s)"} · {plan.time}</span><small>{plan.active ? "Activo desde " + dateLabel(plan.startDate, true) : "Pausado"}</small></div><button className={"switch-button" + (plan.active ? " is-on" : "")} role="switch" aria-checked={plan.active} aria-label={(plan.active ? "Pausar " : "Activar ") + plan.medicine} onClick={() => journal.togglePlan(plan)}><span /></button></article>) : <div className="empty-state"><Repeat2 size={25} /><b>Aún no tienes tratamientos</b><p>Programa la medicación de tu receta para verla en su calendario.</p></div>}</div><button className="primary-button full-button" onClick={() => setModal("plan")}><Plus size={18} />Nuevo tratamiento</button></Modal>}
+    {modal === "plan" && <PlanModal date={day} previous={converting} suggestions={suggestions} Modal={Modal} onClose={() => setModal(converting ? "plans" : "")} onSave={savePlan} />}
+    {modal === "plans" && <TreatmentManager plans={plans} records={records} Modal={Modal} onClose={() => setModal("")} onNew={() => openPlan()} onToggle={journal.togglePlan} onRefill={(plan) => openRefill(plan, "plans")} onConvert={openPlan} />}
+    {modal === "refill" && selectedRefill && <RefillModal plan={selectedRefill} records={records} Modal={Modal} onClose={() => setModal(refillReturnTo)} onDecline={declineRefill} onSave={saveRefill} />}
+    {modal === "treatment-take" && selected && <TreatmentTakeModal dose={selected} Modal={Modal} onClose={() => setModal(takeReturnTo)} onSave={takeDose} />}
     {modal === "delete" && selected && <Modal title="¿Eliminar esta toma?" sub="CONFIRMAR CAMBIO" onClose={() => setModal(deleteReturnTo)}><div className="confirm-med"><Med name={selected.medicine} /><div><b>{medicineLabel(selected.medicine)}</b><span>{dateLabel(selected.date, true)} · {selected.takenAt ? timeLabel(selected.takenAt, true) : "Hora no registrada"}</span></div></div><p className="modal-copy">Se quitará esta toma de tu historial.</p><div className="modal-actions"><button className="secondary-button" onClick={() => setModal(deleteReturnTo)}>Conservar</button><button className="danger-button" onClick={deleteSelected}><Trash2 size={16} />Eliminar</button></div></Modal>}
     {modal === "name-entry" && <NameEntryModal name={name} onClose={() => setModal("")} onEnter={enterProfile} />}
     {modal === "profile" && <ProfileModal journal={journal} initials={initials} permission={permission} onClose={() => setModal("")} onToast={setToast} onChangeName={changeName} onRecover={(history) => { if (history.latest) setDay(history.latest); setView("month"); setSection("records"); setModal(""); setToast("Copia local recuperada"); }} />}

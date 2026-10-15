@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { OWNER, loadLocalSession, readRecords, readDeleted, readPlans, readReminders, readSavedHistories, nameKey, plansKey, prefsKey, writeJson, persistRecords, writeDeleted, mergeRecords, mergePlans, makeId, cleanProfileName, profileKey, profileUid } from "./storage";
-import { timeForDay } from "./calendar";
+import { today } from "./calendar";
+import { isStockPlan, makeRefillBatch, scheduledDoses, stockState, validateStockPlan } from "./treatments";
 
 export const firebaseApi = () => Promise.all([import("./firebase"), import("firebase/auth"), import("firebase/firestore")]).then(([app, auth, store]) => ({ ...app, ...auth, ...store }));
 const snapshotRecords = (snapshot) => snapshot.docs.map((item) => ({ ...item.data(), id: item.id }));
@@ -227,11 +228,24 @@ export default function useJournal() {
     const item = { id: makeId(), ...data, legacy: false, updatedAt: Date.now() };
     store([...state.current.records, item]); setDirty((old) => new Set(old).add(item.id)); return item;
   }
-  function takeDose(dose) {
-    const existing = state.current.records.find((item) => item.planId === dose.planId && item.date === dose.date && item.status === "taken");
+  function takeDose(dose, recordedAt) {
+    const current = state.current, plan = current.plans.find((item) => item.id === dose.planId);
+    const existing = current.records.find((item) => item.planId === dose.planId && item.status === "taken" && (dose.doseKey ? item.doseKey === dose.doseKey : item.date === dose.date && (!item.plannedTime || item.plannedTime === dose.plannedTime)));
     if (existing) return existing;
-    const item = { id: dose.isVirtual ? makeId() : dose.id, planId: dose.planId, medicine: dose.medicine, date: dose.date, plannedTime: dose.plannedTime || null, status: "taken", takenAt: timeForDay(dose.date), legacy: false, updatedAt: Date.now() };
-    store(dose.isVirtual ? [...state.current.records, item] : state.current.records.map((old) => old.id === item.id ? item : old));
+    if (!plan?.active) throw new Error("Este tratamiento está pausado. Actívalo antes de registrar una toma.");
+    const takenAt = recordedAt ?? (dose.date === today() ? Date.now() : null);
+    if (!takenAt || takenAt > Date.now() || dose.date > today()) throw new Error("Indica la hora real de la toma anterior.");
+    if (isStockPlan(plan)) {
+      const scheduled = scheduledDoses(plan, dose.date).find((item) => item.doseKey === dose.doseKey);
+      if (!scheduled) throw new Error("Esta toma ya no corresponde al horario del tratamiento.");
+      if (scheduled.purchasePending) throw new Error("Confirma que ya tienes las pastillas antes de registrar esta toma.");
+      if (stockState(plan, current.records).remaining < dose.pillQuantity) throw new Error("No hay suficientes pastillas disponibles. Registra la compra para continuar.");
+    }
+    let id = dose.isVirtual ? "dose-" + (dose.doseKey || `${dose.planId}:${dose.date}:${dose.plannedTime}`) : dose.id;
+    while (current.deleted.has(id)) id += ":r";
+    const item = { id, planId: dose.planId, medicine: dose.medicine, date: dose.date, plannedTime: dose.plannedTime || null, status: "taken", takenAt, legacy: false, updatedAt: Date.now(),
+      ...(dose.doseKey ? { doseKey: dose.doseKey, plannedAt: dose.plannedAt, pillQuantity: dose.pillQuantity } : {}) };
+    store(dose.isVirtual ? [...current.records, item] : current.records.map((old) => old.id === item.id ? item : old));
     setDirty((old) => new Set(old).add(item.id)); return item;
   }
   function removeRecord(record) {
@@ -247,12 +261,35 @@ export default function useJournal() {
     const updated = { ...existing, medicine: medicine.trim(), updatedAt: Math.max(Date.now(), Number(existing.updatedAt || 0) + 1) };
     store(state.current.records.map((item) => item.id === recordId ? updated : item)); setDirty((old) => new Set(old).add(recordId)); return updated;
   }
-  function savePlan(plan) {
-    const next = [...state.current.plans, plan];
+  function storePlans(next) {
     if (!writeJson(plansKey(state.current.uid), next)) throw new Error("No se pudo guardar el tratamiento en este navegador.");
     state.current.plans = next; setPlans(next);
   }
-  function togglePlan(plan) { const next = state.current.plans.map((item) => item.id === plan.id ? { ...item, active: !item.active, updatedAt: Date.now() } : item); writeJson(plansKey(uid), next); state.current.plans = next; setPlans(next); }
+  function savePlan(plan, previousPlanId) {
+    if (isStockPlan(plan)) validateStockPlan(plan);
+    const next = state.current.plans.map((item) => item.id === previousPlanId ? { ...item, active: false, replacedBy: plan.id, updatedAt: Math.max(Date.now(), Number(item.updatedAt || 0) + 1) } : item);
+    storePlans([...next, plan]);
+  }
+  function updatePlan(id, transform) {
+    const previous = state.current.plans.find((item) => item.id === id);
+    if (!previous) throw new Error("Este tratamiento ya no está disponible.");
+    const next = transform(previous);
+    next.updatedAt = Math.max(Date.now(), Number(previous.updatedAt || 0) + 1);
+    storePlans(state.current.plans.map((item) => item.id === id ? next : item));
+    return next;
+  }
+  function togglePlan(plan) { return updatePlan(plan.id, (item) => ({ ...item, active: !item.active })); }
+  function declineRefill(id) { return updatePlan(id, (plan) => ({ ...plan, pendingPurchase: null, finishAfterBatch: stockState(plan, state.current.records).cycle })); }
+  function refillPlan(id, quantity, purchased) {
+    if (!Number.isInteger(quantity) || quantity < 1 || quantity > 9999) throw new Error("Indica entre 1 y 9999 pastillas.");
+    return updatePlan(id, (plan) => {
+      if (!isStockPlan(plan)) throw new Error("Configura primero la cantidad de este tratamiento.");
+      const purchaseId = plan.pendingPurchase?.id || makeId();
+      if (!purchased) return { ...plan, pendingPurchase: { ...makeRefillBatch(plan, quantity, purchaseId), createdAt: Date.now() } };
+      const batch = makeRefillBatch(plan, quantity, purchaseId);
+      return { ...plan, active: true, batches: [...plan.batches, batch], pendingPurchase: null, finishAfterBatch: null };
+    });
+  }
   function changeReminders(value) { remindersTouched.current = true; state.current.reminders = value; setReminders(value); }
   function reconnect() { epoch.current++; setCloudError(""); setCloudReady(false); setProfileReady(false); setSync(cloud ? "syncing" : "connecting"); setRetry((old) => old + 1); }
   function restoreLocalHistory(historyUid) {
@@ -265,5 +302,5 @@ export default function useJournal() {
     setDirty((old) => new Set([...old, ...nextRecords.filter((item) => imported.has(item.id)).map((item) => item.id)]));
     return history;
   }
-  return { uid, profileId, records, plans, name, reminders, sync, cloudError, loadedCloudRecords, savedHistories, enterName, reconnect, restoreLocalHistory, saveRecord, takeDose, removeRecord, renameRecord, savePlan, togglePlan, changeReminders };
+  return { uid, profileId, records, plans, name, reminders, sync, cloudError, loadedCloudRecords, savedHistories, enterName, reconnect, restoreLocalHistory, saveRecord, takeDose, removeRecord, renameRecord, savePlan, togglePlan, refillPlan, declineRefill, changeReminders };
 }

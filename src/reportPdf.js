@@ -96,9 +96,9 @@ export function createReportPdf(model, fonts) {
     ...tableOptions, startY: y,
     head: [["Fecha", "Pastilla", "Hora de toma", "Registro", "Tiempo entre tomas"]],
     body: model.records.map((record) => {
-      const planned = record.plannedTime ? atTime(record.date, record.plannedTime) : null;
+      const planned = record.plannedAt || (record.plannedTime ? atTime(record.date, record.plannedTime) : null);
       const delta = planned && record.takenAt ? record.takenAt - planned : null;
-      return [numericDate(record.date), clean(medicineLabel(record.medicine)), recordTime(record) + (record.plannedTime ? "\nPrevista: " + record.plannedTime : ""), recordType(record), (model.intervals.get(record.id) || "-") + (delta !== null ? "\n" + (delta === 0 ? "A la hora prevista" : durationLabel(delta) + (delta < 0 ? " antes de lo previsto" : " después de lo previsto")) : "")];
+      return [numericDate(record.date), clean(medicineLabel(record.medicine)) + (record.pillQuantity ? `\n${record.pillQuantity} pastilla(s) en la toma` : ""), recordTime(record) + (record.plannedTime ? "\nPrevista: " + record.plannedTime : ""), recordType(record), (model.intervals.get(record.id) || "-") + (delta !== null ? "\n" + (delta === 0 ? "A la hora prevista" : durationLabel(delta) + (delta < 0 ? " antes de lo previsto" : " después de lo previsto")) : "")];
     }),
     columnStyles: { 0: { cellWidth: 24, fontSize: 8 }, 1: { cellWidth: 55, cellPadding: { left: 12, right: 3, top: 3.5, bottom: 3.5 } }, 2: { cellWidth: 28 }, 3: { cellWidth: 25 }, 4: { cellWidth: 46, fontSize: 8 } },
     didDrawCell: (data) => { if (data.section === "body" && data.column.index === 1) pill(model.records[data.row.index].medicine, data.cell.x + 2, data.cell.y + (data.cell.height - 7) / 2, 7); },

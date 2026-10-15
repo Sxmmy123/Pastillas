@@ -1,0 +1,116 @@
+.treatment-form { gap: 20px; }
+.treatment-form .field-label > span { display: flex; align-items: center; gap: 6px; }
+.treatment-quantity { display: grid; grid-template-columns: 1.5fr 1fr; gap: 14px; padding: 18px; border: 1px solid #dfebdf; border-radius: 16px; background: #f4f9f3; }
+.treatment-quantity input { background: #fff; }
+.treatment-mode-field { min-width: 0; margin: 0; padding: 0; border: 0; }
+.treatment-mode-field legend { margin-bottom: 11px; color: #6c8b71; font-size: 12px; font-weight: 600; }
+.treatment-modes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px; }
+.treatment-modes button { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 11px; min-width: 0; min-height: 91px; padding: 14px; border: 1px solid #e2eae1; border-radius: 14px; color: #94a48b; background: #fbfdf9; text-align: left; }
+.treatment-modes button span { color: #7e9375; font-size: 11px; line-height: 1.4; }
+.treatment-modes button > svg:last-child:not(:first-child) { position: absolute; top: 13px; right: 12px; }
+.treatment-modes button.active { border-color: #8dbb8d; background: #eef7e9; box-shadow: 0 0 0 2px #84ae6d0a; color: #5f9256; }
+.treatment-modes button.active span { color: #53824b; font-weight: 600; }
+.hours-picker { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; color: #829476; font-size: 12px; }
+.hours-picker > div { display: flex; flex-wrap: wrap; gap: 7px; }
+.hours-picker button { min-width: 49px; min-height: 38px; padding: 0 11px; border: 1px solid #e0e9dc; border-radius: 10px; background: #f9fcf7; color: #8e9f81; font-size: 12px; }
+.hours-picker button.active { color: #55864a; border-color: #a6c895; background: #ecf6e4; font-weight: 600; }
+.custom-hours { display: flex; align-items: center; gap: 8px; margin-left: auto; font-size: 11px; }
+.custom-hours input { width: 68px; height: 38px; padding: 7px; border: 1px solid #e1eadb; border-radius: 9px; color: #6e8f5f; background: #fff; }
+.treatment-start { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.treatment-start > label:only-child { grid-column: 1 / -1; }
+.day-night-times { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.day-night-times > label { gap: 10px; padding: 17px; border: 1px solid #eee5ce; border-radius: 15px; background: #fcf8ef; }
+.day-night-times > label:last-child { border-color: #e1e1ef; background: #f5f4fb; }
+.day-night-times label:first-child svg { color: #c0a16d; }
+.day-night-times label:last-child svg { color: #9b90bd; }
+.day-night-times input { background: #fff; }
+.treatment-preview { padding: 18px; border: 1px solid #e1ebdc; border-radius: 17px; background: #fbfdf8; }
+.treatment-preview-heading { display: flex; align-items: center; justify-content: space-between; gap: 9px; margin-bottom: 17px; }
+.treatment-preview-heading b { color: #6b8d59; font: 700 14px Manrope, sans-serif; }
+.treatment-preview-heading > span { color: #9aad85; font-size: 10px; white-space: nowrap; }
+.treatment-timeline { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px 15px; margin: 0; padding: 0; list-style: none; }
+.treatment-timeline li { position: relative; display: flex; flex-direction: column; align-items: center; gap: 5px; min-width: 0; padding: 10px 4px; border: 1px solid #e7eddf; border-radius: 12px; background: #fff; }
+.timeline-clock { display: grid; place-items: center; width: 25px; height: 25px; border-radius: 9px; color: #a6ac72; background: #f5f4e6; }
+.timeline-clock.overnight { color: #9c8bb7; background: #f1ecf7; }
+.treatment-timeline b { color: #6c8b59; font-size: 13px; font-variant-numeric: tabular-nums; }
+.treatment-timeline small { color: #a2b08f; font-size: 9px; text-align: center; line-height: 1.4; }
+.timeline-arrow { position: absolute; right: -15px; top: 41px; color: #b7c7a9; }
+.treatment-timeline li:nth-child(4n) .timeline-arrow { display: none; }
+.treatment-last-dose { display: flex; align-items: flex-start; gap: 7px; margin: 17px 0 0; padding-top: 14px; border-top: 1px solid #e9eedf; color: #94a87c; font-size: 11px; line-height: 1.7; }
+.treatment-last-dose svg { flex-shrink: 0; margin-top: 2px; }
+.treatment-last-dose b { color: #7c9c60; font-weight: 500; }
+.overnight-notice { display: flex; align-items: flex-start; gap: 10px; margin-top: 15px; padding: 13px; border: 1px solid #e8e0f0; border-radius: 12px; color: #a693b7; background: #f7f3fa; }
+.overnight-notice > svg { flex-shrink: 0; margin-top: 2px; }
+.overnight-notice p { display: flex; flex-direction: column; gap: 6px; margin: 0; font-size: 11px; line-height: 1.7; }
+.overnight-notice b { color: #9a86ab; font-weight: 500; }
+.overnight-notice span { color: #a99ab8; }
+.treatment-stock-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; margin-bottom: 18px; }
+.stock-mini-card { display: flex; align-items: center; gap: 8px; padding: 11px; border: 1px solid #e1eadd; border-radius: 15px; background: #fbfdf8; }
+.stock-mini-card > button:first-child { display: flex; align-items: center; gap: 9px; flex: 1; min-width: 0; padding: 0; border: 0; background: transparent; text-align: left; }
+.stock-mini-card > button > span:last-child { display: flex; flex-direction: column; min-width: 0; gap: 5px; }
+.stock-mini-card b { color: #719260; font-size: 12px; font-weight: 600; overflow-wrap: anywhere; }
+.stock-mini-card small { color: #a2b28d; font-size: 10px; }
+.stock-mini-card.low { background: #fffaf0; border-color: #ece2c6; }
+.stock-mini-card.low small { color: #b6a574; }
+.stock-mini-add { display: grid; place-items: center; flex-shrink: 0; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 10px; background: #eef5e8; color: #91aa79; }
+.stock-mini-card.low .stock-mini-add { background: #f7efd9; color: #b7a169; }
+.stock-plan-list { display: flex; flex-direction: column; gap: 14px; }
+.stock-plan-card { padding: 18px; border: 1px solid #e1ebdb; border-radius: 17px; background: #fbfdf8; }
+.stock-plan-card.paused { background: #fafbf8; }
+.stock-plan-card.paused .medicine-mark { opacity: .5; }
+.stock-plan-title { display: flex; align-items: center; gap: 11px; margin-bottom: 18px; }
+.stock-plan-title > div { display: flex; flex-direction: column; flex: 1; min-width: 0; gap: 7px; }
+.stock-plan-title b { color: #71905e; font-size: 14px; overflow-wrap: anywhere; }
+.stock-plan-title > div > span { color: #9ead90; font-size: 11px; line-height: 1.6; }
+.stock-numbers { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 6px; color: #9daf8b; font-size: 11px; }
+.stock-numbers b { color: #7f9f66; font: 800 25px Manrope, sans-serif; }
+.stock-numbers small { color: #aabc98; font-size: 10px; }
+.stock-progress { height: 6px; margin: 11px 0 13px; overflow: hidden; border-radius: 6px; background: #eaf0e0; }
+.stock-progress i { display: block; height: 100%; border-radius: 6px; background: #a9c490; transition: width .25s; }
+.stock-plan-status { margin: 0; color: #9caf85; font-size: 11px; line-height: 1.6; }
+.stock-plan-end { margin: 7px 0; color: #b0bc9f; font-size: 10px; line-height: 1.6; }
+.pending-purchase { display: flex; align-items: flex-start; gap: 8px; margin: 14px 0 7px; padding: 12px; border-radius: 10px; color: #b6a473; background: #f8f2e3; font-size: 11px; }
+.pending-purchase > svg { flex-shrink: 0; }
+.pending-purchase > span, .refill-next-dose > span { display: flex; flex-direction: column; gap: 6px; line-height: 1.6; }
+.pending-purchase small { color: #baad8c; font-size: 10px; }
+.refill-question { color: #92a482; font-size: 13px; line-height: 1.8; }
+.purchase-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.purchase-options button { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 47px; padding: 10px 8px; border: 1px solid #e2e9dd; border-radius: 12px; color: #9aab88; background: #fbfdf8; font-size: 12px; }
+.purchase-options button.active { border-color: #a6c495; color: #7c9e64; background: #eff7e7; }
+.refill-next-dose { display: flex; align-items: flex-start; gap: 10px; padding: 14px; border: 1px solid #e6eddf; border-radius: 12px; background: #f8fbf2; color: #9aae80; font-size: 11px; }
+.refill-next-dose > svg { flex-shrink: 0; margin-top: 2px; }
+.refill-next-dose b { color: #83a365; font-size: 13px; font-weight: 600; }
+.refill-next-dose small { color: #a8b995; font-size: 10px; }
+.calendar-pill.pill-awaiting-purchase { border-color: #d5c18a; background: #fbf5e6; }
+@media (max-width: 760px) {
+  .treatment-form { gap: 19px; }
+  .treatment-modes { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .treatment-modes button { flex-direction: row; align-items: center; gap: 9px; min-height: 63px; padding: 11px; }
+  .treatment-modes button > svg:first-child { flex-shrink: 0; width: 19px; }
+  .treatment-modes button span { padding-right: 8px; font-size: 11px; }
+  .treatment-modes button > svg:last-child:not(:first-child) { top: 5px; right: 5px; width: 11px; }
+  .treatment-quantity { gap: 10px; padding: 13px; grid-template-columns: 1.25fr 1fr; }
+  .treatment-quantity .field-label { font-size: 11px; }
+  .treatment-quantity .field-label > span > svg { display: none; }
+  .hours-picker { gap: 9px; }
+  .hours-picker > div { gap: 5px; }
+  .hours-picker button { min-width: 43px; min-height: 40px; padding: 0 8px; }
+  .custom-hours { margin-left: 0; }
+  .custom-hours input { width: 54px; font-size: 16px; }
+  .treatment-start { gap: 10px; }
+  .day-night-times { gap: 9px; }
+  .day-night-times > label { padding: 13px; }
+  .treatment-preview { padding: 14px 12px; }
+  .treatment-preview-heading b { font-size: 13px; }
+  .treatment-timeline { gap: 10px; }
+  .treatment-timeline li { padding: 9px 3px; }
+  .treatment-timeline b { font-size: 12px; }
+  .treatment-timeline small { font-size: 8px; }
+  .timeline-arrow { right: -11px; width: 10px; }
+  .treatment-last-dose { font-size: 10px; }
+  .treatment-stock-strip { grid-template-columns: 1fr; gap: 8px; margin-bottom: 14px; }
+  .stock-mini-card { padding: 10px; }
+  .stock-mini-card b { font-size: 12px; }
+  .stock-plan-card { padding: 15px; }
+}
+@media (prefers-reduced-motion: reduce) { .stock-progress i { transition: none; } }

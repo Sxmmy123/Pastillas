@@ -47,7 +47,13 @@ Al tocar una pastilla del calendario puedes completar su nombre o elegir **Elimi
 
 ## Tratamientos y avisos
 
-Cada tratamiento permite elegir fecha inicial, hora, repetición en días o semanas y duración en días, semanas, meses o sin fecha final. Los tratamientos pausados dejan de crear tomas futuras en el calendario. El aviso al abrir la app se puede desactivar desde el perfil. Los avisos del navegador requieren permiso y se programan mientras la app permanece abierta; el aviso al abrir sirve como recordatorio adicional.
+Los nuevos tratamientos se organizan por **cantidad de pastillas** y **pastillas por toma**. Se puede elegir cada ciertas horas (6, 8, 10, 12 o un intervalo personalizado), cada mañana, cada noche o mañana y noche con horas independientes e iconos de sol y luna. La fecha final se calcula por la cantidad, sin pedir duración. La vista previa muestra las primeras tomas, la última y si habrá tomas de madrugada (00:00–05:59). Los intervalos en horas mantienen el tiempo transcurrido exacto; los horarios diarios conservan sus horas locales. La aplicación no omite ni cambia automáticamente tomas nocturnas.
+
+Una pauta de dos pastillas, una por toma, cada ocho horas desde las 08:00 programa 08:00 y 16:00. Cada ocurrencia tiene su identidad propia: varias tomas del mismo tratamiento pueden registrarse en un día. Registrar una toma descuenta la cantidad correspondiente; eliminarla devuelve esas pastillas a las disponibles. Para una fecha anterior se pide la hora real, sin inventarla.
+
+Cuando quedan las dos últimas pastillas (o ya no se completa otra toma), la app ofrece reponer después de haber registrado al menos una toma. **No, terminar al acabarlas** conserva las tomas restantes y evita nuevas preguntas para esa compra. **Sí** permite añadir la cantidad comprada y extender el calendario. **Voy a comprarlas** alarga el calendario con tomas **Por comprar**, pero no aumenta las existencias disponibles. Para registrar esas tomas y recibir avisos hay que confirmar que la compra ya está disponible. Una compra pendiente se puede cancelar. Las reposiciones mantienen el historial; si el calendario ya terminó, las nuevas tomas retoman la siguiente hora futura de la misma pauta y no rellenan fechas pasadas con una compra posterior. Las pastillas sueltas que no completan una toma se conservan y se acumulan con la siguiente compra.
+
+Los tratamientos anteriores se conservan con su horario original. Desde Administrar se pueden pasar a cantidad creando una pauta nueva y pausando la anterior, sin modificar sus registros. Pausar un tratamiento oculta sus tomas pendientes; los registros realizados siguen visibles. El aviso al abrir la app se puede desactivar desde el perfil. Las notificaciones del navegador requieren permiso y se programan para cada toma de hoy y mañana mientras la app permanece abierta; no se promete una alarma con la PWA cerrada.
 
 ## Estadísticas e informe para la consulta
 
