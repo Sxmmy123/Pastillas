@@ -1,23 +1,39 @@
 .treatment-form { gap: 20px; }
 .treatment-form .field-label > span { display: flex; align-items: center; gap: 6px; }
-.treatment-quantity { display: grid; grid-template-columns: 1.5fr 1fr; gap: 14px; padding: 18px; border: 1px solid #dfebdf; border-radius: 16px; background: #f4f9f3; }
-.treatment-quantity input { background: #fff; }
+.treatment-step-number { display: inline-grid; place-items: center; flex-shrink: 0; width: 22px; height: 22px; margin-right: 3px; border-radius: 8px; background: #edf5e8; color: #638451; font: 700 11px Manrope, sans-serif; }
+.treatment-field-help { color: #8a9c84; font-size: 11px; font-weight: 400; line-height: 1.6; }
 .treatment-mode-field { min-width: 0; margin: 0; padding: 0; border: 0; }
-.treatment-mode-field legend { margin-bottom: 11px; color: #6c8b71; font-size: 12px; font-weight: 600; }
-.treatment-modes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px; }
-.treatment-modes button { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 11px; min-width: 0; min-height: 91px; padding: 14px; border: 1px solid #e2eae1; border-radius: 14px; color: #94a48b; background: #fbfdf9; text-align: left; }
-.treatment-modes button span { color: #7e9375; font-size: 11px; line-height: 1.4; }
+.treatment-mode-field legend { margin-bottom: 11px; padding: 0; color: #6c8b71; font-size: 12px; font-weight: 600; }
+.treatment-mode-field legend .treatment-step-number { margin-right: 9px; }
+.treatment-modes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+.treatment-modes button { position: relative; display: flex; align-items: center; gap: 10px; min-width: 0; min-height: 59px; padding: 14px; border: 1px solid #e2eae1; border-radius: 14px; color: #94a48b; background: #fbfdf9; text-align: left; }
+.treatment-modes button > svg:first-child { flex-shrink: 0; }
+.treatment-modes button span { padding-right: 10px; color: #7e9375; font-size: 12px; line-height: 1.4; }
 .treatment-modes button > svg:last-child:not(:first-child) { position: absolute; top: 13px; right: 12px; }
 .treatment-modes button.active { border-color: #8dbb8d; background: #eef7e9; box-shadow: 0 0 0 2px #84ae6d0a; color: #5f9256; }
 .treatment-modes button.active span { color: #53824b; font-weight: 600; }
-.hours-picker { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; color: #829476; font-size: 12px; }
-.hours-picker > div { display: flex; flex-wrap: wrap; gap: 7px; }
-.hours-picker button { min-width: 49px; min-height: 38px; padding: 0 11px; border: 1px solid #e0e9dc; border-radius: 10px; background: #f9fcf7; color: #8e9f81; font-size: 12px; }
+.hours-picker { display: flex; flex-direction: column; align-items: stretch; gap: 9px; margin-top: 12px; color: #829476; font-size: 12px; }
+.hours-picker > div { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; }
+.hours-picker button { min-width: 0; min-height: 44px; padding: 0 10px; border: 1px solid #e0e9dc; border-radius: 10px; background: #f9fcf7; color: #8e9f81; font-size: 12px; }
 .hours-picker button.active { color: #55864a; border-color: #a6c895; background: #ecf6e4; font-weight: 600; }
-.custom-hours { display: flex; align-items: center; gap: 8px; margin-left: auto; font-size: 11px; }
-.custom-hours input { width: 68px; height: 38px; padding: 7px; border: 1px solid #e1eadb; border-radius: 9px; color: #6e8f5f; background: #fff; }
-.treatment-start { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-.treatment-start > label:only-child { grid-column: 1 / -1; }
+.hours-picker .hours-custom-toggle { display: flex; align-items: center; justify-content: flex-end; gap: 5px; min-height: 35px; padding: 0; border: 0; color: #779368; background: transparent; font-size: 11px; }
+.hours-custom-toggle[aria-expanded="true"] svg, .treatment-dose-toggle[aria-expanded="true"] > svg:last-child { transform: rotate(180deg); }
+.daily-options, .treatment-day-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+.daily-options button, .treatment-day-options button { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 5px; min-height: 44px; padding: 9px; border: 1px solid #e1eadd; border-radius: 11px; color: #829476; background: #fbfdf9; font-size: 12px; }
+.daily-options button.active, .treatment-day-options button.active { color: #55864a; border-color: #a6c895; background: #ecf6e4; font-weight: 600; }
+.treatment-day-options { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 0; }
+.treatment-date-input, .treatment-time-input, .treatment-start-field .day-night-times { margin-top: 14px; }
+.treatment-time-input input { max-width: 220px; }
+.treatment-start-summary { margin: 13px 0 0; padding: 12px 14px; border-radius: 11px; background: #f5f9f1; color: #829873; font-size: 12px; line-height: 1.8; }
+.treatment-start-summary b { color: #61854d; font-weight: 600; }
+.treatment-dose-option { border-block: 1px solid #edf1e9; }
+.treatment-dose-toggle { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 49px; padding: 10px 0; border: 0; background: transparent; color: #829577; text-align: left; font-size: 12px; }
+.treatment-dose-toggle > span { flex: 1; line-height: 1.6; }
+.treatment-dose-toggle small { color: #759163; font-size: 11px; }
+.treatment-dose-toggle b { color: #678650; font-weight: 600; }
+.treatment-dose-toggle svg { flex-shrink: 0; }
+.treatment-dose-option > label { padding: 6px 0 16px; }
+.treatment-modes button:focus-visible, .hours-picker button:focus-visible, .daily-options button:focus-visible, .treatment-day-options button:focus-visible, .treatment-dose-toggle:focus-visible { outline: 2px solid #78a36b; outline-offset: 3px; }
 .day-night-times { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .day-night-times > label { gap: 10px; padding: 17px; border: 1px solid #eee5ce; border-radius: 15px; background: #fcf8ef; }
 .day-night-times > label:last-child { border-color: #e1e1ef; background: #f5f4fb; }
@@ -85,19 +101,14 @@
 @media (max-width: 760px) {
   .treatment-form { gap: 19px; }
   .treatment-modes { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-  .treatment-modes button { flex-direction: row; align-items: center; gap: 9px; min-height: 63px; padding: 11px; }
+  .treatment-modes button { gap: 9px; min-height: 59px; padding: 11px; }
   .treatment-modes button > svg:first-child { flex-shrink: 0; width: 19px; }
   .treatment-modes button span { padding-right: 8px; font-size: 11px; }
   .treatment-modes button > svg:last-child:not(:first-child) { top: 5px; right: 5px; width: 11px; }
-  .treatment-quantity { gap: 10px; padding: 13px; grid-template-columns: 1.25fr 1fr; }
-  .treatment-quantity .field-label { font-size: 11px; }
-  .treatment-quantity .field-label > span > svg { display: none; }
-  .hours-picker { gap: 9px; }
   .hours-picker > div { gap: 5px; }
-  .hours-picker button { min-width: 43px; min-height: 40px; padding: 0 8px; }
-  .custom-hours { margin-left: 0; }
-  .custom-hours input { width: 54px; font-size: 16px; }
-  .treatment-start { gap: 10px; }
+  .hours-picker button { padding: 0 5px; font-size: 11px; }
+  .treatment-time-input input { max-width: none; }
+  .treatment-day-options button, .daily-options button { padding: 9px 5px; font-size: 11px; }
   .day-night-times { gap: 9px; }
   .day-night-times > label { padding: 13px; }
   .treatment-preview { padding: 14px 12px; }

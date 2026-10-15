@@ -79,6 +79,7 @@ export function treatmentSummary(plan) {
   if (!isStockPlan(plan)) return `Cada ${plan.interval} ${plan.intervalUnit === "weeks" ? "semana(s)" : "día(s)"} · ${plan.time}`;
   if (plan.mode === "hours") return `Cada ${plan.intervalHours} horas · desde ${plan.time}`;
   if (plan.mode === "day-night") return `${plan.morningTime} mañana · ${plan.nightTime} noche`;
+  if (plan.mode === "daily") return `Cada día · ${plan.time}`;
   return `${plan.mode === "night" ? "Cada noche" : "Cada mañana"} · ${plan.time}`;
 }
 
@@ -121,9 +122,9 @@ export function validateStockPlan(plan) {
   if (!String(plan.medicine || "").trim()) throw new Error("Escribe el nombre de la pastilla.");
   if (!/^\d{4}-\d{2}-\d{2}$/.test(plan.startDate || "") || !validTime(plan.time) || !Number.isFinite(atTime(plan.startDate, plan.time))) throw new Error("Elige una fecha y hora inicial válidas.");
   const units = Number(plan.pillsPerDose), quantity = Number(plan.batches?.[0]?.quantity);
-  if (!Number.isInteger(units) || units < 1 || units > 20) throw new Error("Indica entre 1 y 20 pastillas por toma.");
+  if (!Number.isInteger(units) || units < 1 || units > 20) throw new Error("Indica cuántas pastillas tomas cada vez: entre 1 y 20.");
   if (!Number.isInteger(quantity) || quantity < units || quantity > 9999) throw new Error("La cantidad debe cubrir al menos una toma y no superar 9999 pastillas.");
-  if (!["hours", "morning", "night", "day-night"].includes(plan.mode)) throw new Error("Elige cómo se repite el tratamiento.");
+  if (!["hours", "daily", "morning", "night", "day-night"].includes(plan.mode)) throw new Error("Elige cómo se repite el tratamiento.");
   if (plan.mode === "hours" && (!Number.isInteger(Number(plan.intervalHours)) || plan.intervalHours < 1 || plan.intervalHours > 168)) throw new Error("Indica un intervalo de entre 1 y 168 horas.");
   if (plan.mode === "day-night" && (!validTime(plan.morningTime) || !validTime(plan.nightTime) || plan.morningTime >= plan.nightTime)) throw new Error("La hora de la mañana debe ser anterior a la hora de la noche.");
   return plan;

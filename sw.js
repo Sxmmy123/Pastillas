@@ -1,5 +1,5 @@
-const CACHE = "pastillas-shell-24573bc6118a";
-const SHELL = ["./","./LICENCIA-FUENTES.txt","./apple-touch-icon.png","./configurar-firebase.html","./icon-192.png","./icon-512.png","./icon-maskable-512.png","./icon.svg","./manifest.webmanifest","./reglas-firebase.txt","./assets/Atkinson-Bold-DND0wAMM.ttf","./assets/Atkinson-Regular-ycu_OfBo.ttf","./assets/firebase-CSXLdRJO.js","./assets/html2canvas-LgPHJRwO.js","./assets/index-BfBXVu6L.css","./assets/index-d8KWnu0K.js","./assets/index.es-BrtmwX0E.js","./assets/index.esm-CTjUmntZ.js","./assets/index.esm-DzJYQOOt.js","./assets/index.esm-ZtiLxdjX.js","./assets/purify.es-BZxk_wWO.js","./assets/reportFonts-COI-YSfZ.js","./assets/reportPdf-wcsGWK4I.js"];
+const CACHE = "pastillas-shell-194b8b154f1e";
+const SHELL = ["./","./LICENCIA-FUENTES.txt","./apple-touch-icon.png","./configurar-firebase.html","./icon-192.png","./icon-512.png","./icon-maskable-512.png","./icon.svg","./manifest.webmanifest","./reglas-firebase.txt","./assets/Atkinson-Bold-DND0wAMM.ttf","./assets/Atkinson-Regular-ycu_OfBo.ttf","./assets/firebase-CSXLdRJO.js","./assets/html2canvas-C9S7L1Qr.js","./assets/index-B2Lh6BUy.css","./assets/index-CZVAsjC7.js","./assets/index.es-BRTJvLik.js","./assets/index.esm-CTjUmntZ.js","./assets/index.esm-DzJYQOOt.js","./assets/index.esm-ZtiLxdjX.js","./assets/purify.es-BZxk_wWO.js","./assets/reportFonts-COI-YSfZ.js","./assets/reportPdf-Bmz8HAYu.js"];
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)));
   self.skipWaiting();
